@@ -7,7 +7,7 @@ import {
   RefreshCw, Trash2, Power, Plus, Search,
   Eye, Loader2, AlertCircle, CheckCircle2,
   TrendingUp, Users, Activity, Download,
-  Check, X, Copy
+  Check, X, Copy, Mail, Clock
 } from 'lucide-react'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
@@ -381,156 +381,383 @@ export default function AccountsPanel({
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {filteredAccounts.map((account, index) => (
-            <Card
-              key={account.id}
-              className="card-hover border-0 shadow-md glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {/* Status indicator bar */}
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${account.enabled ? 'bg-gradient-to-b from-green-500 to-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+          {filteredAccounts.map((account, index) => {
+            const usageData = account.usageData?.usageBreakdownList?.[0]
+            const usagePercentage = usageData
+              ? (usageData.currentUsageWithPrecision / usageData.usageLimitWithPrecision) * 100
+              : 0
+            const isHighUsage = usagePercentage > 80
+            const isCriticalUsage = usagePercentage > 90
 
-              <CardContent className="pt-6 pl-8">
-                <div className="flex items-start gap-4">
-                  {/* 选择框 */}
-                  <Checkbox
-                    checked={selectedIds.includes(account.id)}
-                    onCheckedChange={() => toggleSelect(account.id)}
-                    className="mt-1 border-2"
-                  />
+            return (
+              <Card
+                key={account.id}
+                className="card-hover border-0 shadow-lg glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                {/* 顶部装饰条 */}
+                <div className={`absolute top-0 left-0 right-0 h-1 ${
+                  account.enabled
+                    ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500'
+                    : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                }`} />
 
-                  {/* 账户信息 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <h3 className="font-bold text-lg truncate">
-                        {account.nickname || account.email}
-                      </h3>
-                      <Badge
-                        className={`${
+                <CardContent className="pt-6">
+                  <div className="flex gap-4">
+                    {/* 左侧：头像和选择框 */}
+                    <div className="flex flex-col items-center gap-3">
+                      <Checkbox
+                        checked={selectedIds.includes(account.id)}
+                        onCheckedChange={() => toggleSelect(account.id)}
+                        className="border-2"
+                      />
+                      <div className="relative">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg ${
                           account.subscriptionType?.includes('Pro')
-                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            ? 'bg-gradient-to-br from-purple-600 to-pink-600'
+                            : 'bg-gradient-to-br from-gray-500 to-gray-600'
+                        }`}>
+                          {(account.nickname || account.email).charAt(0).toUpperCase()}
+                        </div>
+                        {/* 状态指示器 */}
+                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white dark:border-gray-900 ${
+                          account.enabled ? 'bg-green-500' : 'bg-gray-400'
+                        }`}>
+                          {account.enabled && (
+                            <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 中间：主要信息 */}
+                    <div className="flex-1 min-w-0 space-y-4">
+                      {/* 标题行 */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-bold text-lg truncate">
+                              {account.nickname || account.email}
+                            </h3>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                              onClick={() => handleCopyId(account.id)}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate flex items-center gap-2">
+                            <Mail className="w-3 h-3" />
+                            {account.email}
+                          </p>
+                        </div>
+
+                        {/* 徽章组 */}
+                        <div className="flex flex-wrap gap-2 justify-end">
+                          <Badge
+                            className={`${
+                              account.subscriptionType?.includes('Pro')
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-md'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {account.subscriptionInfo?.subscriptionTitle || account.subscriptionType || 'Free'}
+                          </Badge>
+                          {account.enabled ? (
+                            <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border-2">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              已启用
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600 border-2">
+                              已禁用
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 统计数据网格 */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 mb-1">
+                            <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">请求数</span>
+                          </div>
+                          <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
+                            {account.requestCount || 0}
+                          </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">认证</span>
+                          </div>
+                          <p className="text-sm font-bold text-purple-900 dark:text-purple-100">
+                            {account.authMethod === 'idc' ? 'IdC' : 'Social'}
+                          </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-xs text-green-700 dark:text-green-300 font-medium">最后使用</span>
+                          </div>
+                          <p className="text-xs font-semibold text-green-900 dark:text-green-100 truncate">
+                            {formatDate(account.lastUsed)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 用量和额度详情 */}
+                      {account.usageData?.usageBreakdownList && account.usageData.usageBreakdownList.length > 0 && (
+                        <div className="space-y-3">
+                          {account.usageData.usageBreakdownList.map((usage, idx) => {
+                            const current = usage.currentUsageWithPrecision || usage.currentUsage || 0
+                            const limit = usage.usageLimitWithPrecision || usage.usageLimit || 0
+                            const remaining = Math.max(0, limit - current)
+                            const percentage = limit > 0 ? (current / limit) * 100 : 0
+                            const isHigh = percentage > 80
+                            const isCritical = percentage > 90
+
+                            const overages = usage.currentOveragesWithPrecision || usage.currentOverages || 0
+                            const overageCap = usage.overageCapWithPrecision || usage.overageCap || 0
+                            const hasOverage = overages > 0
+                            const overagePercentage = overageCap > 0 ? (overages / overageCap) * 100 : 0
+
+                            return (
+                              <div key={idx} className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700 space-y-3">
+                                {/* 标题行 */}
+                                <div className="flex justify-between items-start">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
+                                      isCritical ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                                      isHigh ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
+                                      'bg-gradient-to-br from-purple-600 to-pink-600'
+                                    }`}>
+                                      <Activity className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div>
+                                      <p className="text-base font-bold">
+                                        {usage.displayName || usage.resourceType}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        {usage.currency && (
+                                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">
+                                            {usage.currency}
+                                          </span>
+                                        )}
+                                        {usage.unit && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {usage.unit.toLowerCase()}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* 超额状态徽章 */}
+                                  {account.overageConfiguration?.overageStatus === 'ENABLED' && (
+                                    <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                                      超额已启用
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* 额度统计 */}
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div className="text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">已使用</p>
+                                    <p className={`text-lg font-bold ${
+                                      isCritical ? 'text-red-600 dark:text-red-400' :
+                                      isHigh ? 'text-orange-600 dark:text-orange-400' :
+                                      'text-foreground'
+                                    }`}>
+                                      {current.toFixed(1)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">剩余</p>
+                                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                                      {remaining.toFixed(1)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">总额度</p>
+                                    <p className="text-lg font-bold">
+                                      {limit.toFixed(0)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* 进度条 */}
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-muted-foreground">使用进度</span>
+                                    <span className={`font-semibold ${
+                                      isCritical ? 'text-red-600 dark:text-red-400' :
+                                      isHigh ? 'text-orange-600 dark:text-orange-400' :
+                                      'text-foreground'
+                                    }`}>
+                                      {percentage.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                  <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                                    <div
+                                      className={`h-full transition-all duration-500 relative ${
+                                        isCritical
+                                          ? 'bg-gradient-to-r from-red-500 to-red-600'
+                                          : isHigh
+                                          ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                                          : 'bg-gradient-to-r from-purple-600 to-pink-600'
+                                      }`}
+                                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                                    >
+                                      <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 超额信息 */}
+                                {usage.overageRate && (
+                                  <div className="pt-3 border-t border-gray-300 dark:border-gray-600 space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-muted-foreground flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        超额费率
+                                      </span>
+                                      <span className="font-semibold">
+                                        {usage.currency} {usage.overageRate} / {usage.unit?.toLowerCase()}
+                                      </span>
+                                    </div>
+
+                                    {hasOverage && (
+                                      <>
+                                        <div className="flex items-center justify-between text-sm">
+                                          <span className="text-muted-foreground">当前超额</span>
+                                          <span className="font-bold text-orange-600 dark:text-orange-400">
+                                            {overages.toFixed(2)} / {overageCap.toFixed(0)}
+                                          </span>
+                                        </div>
+
+                                        {usage.overageCharges > 0 && (
+                                          <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">超额费用</span>
+                                            <span className="font-bold text-red-600 dark:text-red-400">
+                                              {usage.currency} {usage.overageCharges.toFixed(2)}
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        {/* 超额进度条 */}
+                                        <div className="space-y-1">
+                                          <div className="flex justify-between text-xs">
+                                            <span className="text-orange-600 dark:text-orange-400">超额使用</span>
+                                            <span className="font-semibold text-orange-600 dark:text-orange-400">
+                                              {overagePercentage.toFixed(1)}%
+                                            </span>
+                                          </div>
+                                          <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div
+                                              className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500"
+                                              style={{ width: `${Math.min(overagePercentage, 100)}%` }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {!hasOverage && (
+                                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                                        未超额使用
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* 重置时间 */}
+                                {usage.nextDateReset && (
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-gray-300 dark:border-gray-600">
+                                    <Clock className="w-3 h-3" />
+                                    <span>
+                                      重置时间: {new Date(usage.nextDateReset * 1000).toLocaleString('zh-CN', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 右侧：操作按钮 */}
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onShowDetail(account.id)}
+                        className="border-2 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 btn-scale whitespace-nowrap"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        详情
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAction(account.id, () => onToggle(account.id, account.enabled))}
+                        disabled={actionLoading[account.id] === 'toggle'}
+                        className={`border-2 btn-scale whitespace-nowrap ${
+                          account.enabled
+                            ? 'hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30'
+                            : 'hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/30'
                         }`}
                       >
-                        {getSubBadge(account.subscriptionType).label}
-                      </Badge>
-                      {account.enabled ? (
-                        <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-400 border-2">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          已启用
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600 border-2">
-                          已禁用
-                        </Badge>
-                      )}
+                        {actionLoading[account.id] === 'toggle' ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Power className="w-4 h-4 mr-1" />
+                        )}
+                        {account.enabled ? '禁用' : '启用'}
+                      </Button>
                       <Button
-                        variant="ghost"
                         size="sm"
-                        className="h-7 px-2 hover:bg-purple-100 dark:hover:bg-purple-900/30"
-                        onClick={() => handleCopyId(account.id)}
+                        variant="outline"
+                        onClick={() => handleAction(account.id, () => onRefreshAccount(account.id))}
+                        disabled={actionLoading[account.id] === 'refresh'}
+                        className="border-2 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale whitespace-nowrap"
                       >
-                        <Copy className="w-3 h-3 mr-1" />
-                        <span className="text-xs">复制ID</span>
+                        {actionLoading[account.id] === 'refresh' ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                        )}
+                        刷新
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onDelete(account.id)}
+                        className="shadow-md hover:shadow-lg btn-scale whitespace-nowrap"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        删除
                       </Button>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Activity className="w-4 h-4" />
-                        <span className="truncate">{account.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <TrendingUp className="w-4 h-4" />
-                        <span>请求: {account.requestCount || 0}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Activity className="w-4 h-4" />
-                        <span>最后使用: {formatDate(account.lastUsed)}</span>
-                      </div>
-                      {account.authMethod && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
-                            {account.authMethod === 'idc' ? 'IdC' : 'Social'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 用量进度条 */}
-                    {account.usageLimit && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>用量</span>
-                          <span>{account.usageCurrent || 0} / {account.usageLimit}</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-300 ${
-                              (account.usageCurrent / account.usageLimit) > 0.8
-                                ? 'bg-gradient-to-r from-red-500 to-orange-500'
-                                : 'bg-gradient-to-r from-purple-600 to-pink-600'
-                            }`}
-                            style={{ width: `${Math.min((account.usageCurrent / account.usageLimit) * 100, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
-
-                  {/* 操作按钮 */}
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onShowDetail(account.id)}
-                      className="border-2 hover:border-purple-500 dark:hover:border-purple-400 btn-scale"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      详情
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAction(account.id, () => onToggle(account.id, account.enabled))}
-                      disabled={actionLoading[account.id] === 'toggle'}
-                      className="border-2 btn-scale"
-                    >
-                      {actionLoading[account.id] === 'toggle' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Power className="w-4 h-4 mr-1" />
-                      )}
-                      {account.enabled ? '禁用' : '启用'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAction(account.id, () => onRefreshAccount(account.id))}
-                      disabled={actionLoading[account.id] === 'refresh'}
-                      className="border-2 btn-scale"
-                    >
-                      {actionLoading[account.id] === 'refresh' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4 mr-1" />
-                      )}
-                      刷新
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => onDelete(account.id)}
-                      className="shadow-md hover:shadow-lg btn-scale"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      删除
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
