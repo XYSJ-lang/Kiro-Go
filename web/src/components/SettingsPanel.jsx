@@ -21,12 +21,12 @@ export default function SettingsPanel({ password }) {
 
   const [thinking, setThinking] = useState({
     suffix: '-thinking',
-    openaiFormat: '',
-    claudeFormat: ''
+    openaiFormat: 'none',
+    claudeFormat: 'none'
   })
 
   const [endpoint, setEndpoint] = useState({
-    preferred: '',
+    preferred: 'auto',
     enableFallback: true
   })
 
@@ -65,7 +65,11 @@ export default function SettingsPanel({ password }) {
       })
       if (thinkingRes.ok) {
         const data = await thinkingRes.json()
-        setThinking(data)
+        setThinking({
+          suffix: data.suffix || '-thinking',
+          openaiFormat: data.openaiFormat || 'none',
+          claudeFormat: data.claudeFormat || 'none'
+        })
       }
 
       // 加载 endpoint 配置
@@ -74,7 +78,10 @@ export default function SettingsPanel({ password }) {
       })
       if (endpointRes.ok) {
         const data = await endpointRes.json()
-        setEndpoint(data)
+        setEndpoint({
+          preferred: data.preferred || 'auto',
+          enableFallback: data.enableFallback !== false
+        })
       }
 
       // 加载 prompt filter 配置
@@ -111,7 +118,11 @@ export default function SettingsPanel({ password }) {
           'Content-Type': 'application/json',
           'X-Admin-Password': password
         },
-        body: JSON.stringify(thinking)
+        body: JSON.stringify({
+          suffix: thinking.suffix,
+          openaiFormat: thinking.openaiFormat === 'none' ? '' : thinking.openaiFormat,
+          claudeFormat: thinking.claudeFormat === 'none' ? '' : thinking.claudeFormat
+        })
       })
 
       // 保存 endpoint 配置
@@ -121,7 +132,10 @@ export default function SettingsPanel({ password }) {
           'Content-Type': 'application/json',
           'X-Admin-Password': password
         },
-        body: JSON.stringify(endpoint)
+        body: JSON.stringify({
+          preferred: endpoint.preferred === 'auto' ? '' : endpoint.preferred,
+          enableFallback: endpoint.enableFallback
+        })
       })
 
       // 保存 prompt filter 配置
@@ -269,7 +283,7 @@ export default function SettingsPanel({ password }) {
                 <SelectValue placeholder="无" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">无</SelectItem>
+                <SelectItem value="none">无</SelectItem>
                 <SelectItem value="reasoning_content">reasoning_content</SelectItem>
                 <SelectItem value="thinking">thinking</SelectItem>
                 <SelectItem value="think">think</SelectItem>
@@ -286,7 +300,7 @@ export default function SettingsPanel({ password }) {
                 <SelectValue placeholder="无" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">无</SelectItem>
+                <SelectItem value="none">无</SelectItem>
                 <SelectItem value="reasoning_content">reasoning_content</SelectItem>
                 <SelectItem value="thinking">thinking</SelectItem>
                 <SelectItem value="think">think</SelectItem>
@@ -312,7 +326,7 @@ export default function SettingsPanel({ password }) {
                 <SelectValue placeholder="自动" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">自动</SelectItem>
+                <SelectItem value="auto">自动</SelectItem>
                 <SelectItem value="kiro">Kiro</SelectItem>
                 <SelectItem value="codewhisperer">CodeWhisperer</SelectItem>
                 <SelectItem value="amazonq">Amazon Q</SelectItem>
