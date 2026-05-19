@@ -621,7 +621,7 @@ export default function AccountsPanel({
                                 </div>
 
                                 {/* 超额信息 */}
-                                {usage.overageRate && (
+                                {usage.overageRate > 0 && (
                                   <div className="pt-3 border-t border-gray-300 dark:border-gray-600 space-y-2">
                                     <div className="flex items-center justify-between text-sm">
                                       <span className="text-muted-foreground flex items-center gap-1">
@@ -630,6 +630,13 @@ export default function AccountsPanel({
                                       </span>
                                       <span className="font-semibold">
                                         {usage.currency} {usage.overageRate} / {usage.unit?.toLowerCase()}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-muted-foreground">超额上限</span>
+                                      <span className="font-semibold">
+                                        {overageCap.toFixed(0)} {usage.unit?.toLowerCase()}
                                       </span>
                                     </div>
 
@@ -667,13 +674,6 @@ export default function AccountsPanel({
                                           </div>
                                         </div>
                                       </>
-                                    )}
-
-                                    {!hasOverage && (
-                                      <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <CheckCircle2 className="w-3 h-3 text-green-600" />
-                                        未超额使用
-                                      </div>
                                     )}
                                   </div>
                                 )}
