@@ -408,6 +408,8 @@ export default function AccountsPanel({
             const overageRate = getOverageRate(account)
             const isHighUsage = percent > 80
             const isCriticalUsage = percent > 90
+            // 检查超额资格
+            const hasOverageCapability = account.usageData?.subscriptionInfo?.overageCapability === 'OVERAGE_CAPABLE'
 
             return (
               <Card
@@ -632,47 +634,50 @@ export default function AccountsPanel({
                             </div>
                           </div>
 
-                          {/* 超额信息 */}
-                          {hasOverageUsage && (
+                          {/* 超额信息 - 只有具备超额资格的账号才显示 */}
+                          {hasOverageCapability && overageRate > 0 && (
                             <div className="pt-3 border-t border-gray-300 dark:border-gray-600 space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-purple-600 dark:text-purple-400 font-medium">
-                                  ⚡ 超额使用
-                                </span>
-                                <span className="font-bold text-purple-600 dark:text-purple-400">
-                                  {formatUsage(overageUsed)} / {formatUsage(overageCap)} {breakdown.unit?.toLowerCase()}
+                              {/* 超额配置信息 - 始终显示 */}
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">超额费率</span>
+                                <span className="font-semibold">
+                                  {breakdown.currency} {overageRate}/credit
                                 </span>
                               </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">超额上限</span>
+                                <span className="font-semibold">
+                                  {formatUsage(overageCap)} {breakdown.unit?.toLowerCase()}
+                                </span>
+                              </div>
+
+                              {/* 当前超额使用 */}
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-300 dark:border-gray-600">
+                                <span className={hasOverageUsage ? "text-purple-600 dark:text-purple-400 font-bold" : "text-muted-foreground"}>
+                                  当前超额
+                                </span>
+                                <span className={hasOverageUsage ? "font-bold text-purple-600 dark:text-purple-400" : "text-muted-foreground"}>
+                                  {formatUsage(overageUsed)} / {formatUsage(overageCap)}
+                                </span>
+                              </div>
+
+                              {/* 超额进度条 */}
+                              <div className="h-2 rounded-full bg-purple-500/10 overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
+                                  style={{ width: `${Math.min((overageUsed / overageCap) * 100, 100)}%` }}
+                                />
+                              </div>
+
+                              {/* 超额费用 */}
                               {overageCharges > 0 && (
-                                <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
                                   <span className="text-muted-foreground">超额费用</span>
                                   <span className="font-bold text-red-600 dark:text-red-400">
                                     {breakdown.currency} {overageCharges.toFixed(2)}
                                   </span>
                                 </div>
                               )}
-                              {overageCap > 0 && (
-                                <div className="h-2 rounded-full bg-purple-500/10 overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                                    style={{ width: `${Math.min((overageUsed / overageCap) * 100, 100)}%` }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* 超额已开启但未使用 */}
-                          {!hasOverageUsage && overageEnabled && overageRate > 0 && (
-                            <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-green-600 dark:text-green-400 font-medium">
-                                  ⚡ 超额已开启 (上限 {formatUsage(overageCap)})
-                                </span>
-                                <span className="text-muted-foreground text-xs">
-                                  {breakdown.currency} {overageRate}/credit
-                                </span>
-                              </div>
                             </div>
                           )}
 
