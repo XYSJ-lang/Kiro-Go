@@ -348,6 +348,18 @@ export default function AccountsPanel({
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleBatchAction(async (ids) => {
+                        await Promise.all(ids.map(id => onRefreshAccount(id)))
+                        toast.success(`已刷新 ${ids.length} 个账户`)
+                      })}
+                      className="border-2 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      批量刷新
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleBatchAction(onBatchEnable)}
                       className="border-2 border-green-300 hover:bg-green-50 dark:hover:bg-green-950/30 btn-scale"
                     >
@@ -432,17 +444,17 @@ export default function AccountsPanel({
                     : 'bg-gradient-to-r from-gray-400 to-gray-500'
                 }`} />
 
-                <CardContent className="pt-3 pb-3">
-                  <div className="flex gap-3">
+                <CardContent className="pt-2 pb-2">
+                  <div className="flex gap-2">
                     {/* 左侧：头像和选择框 */}
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-1.5">
                       <Checkbox
                         checked={selectedIds.includes(account.id)}
                         onCheckedChange={() => toggleSelect(account.id)}
-                        className="border-2"
+                        className="border"
                       />
                       <div className="relative">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-md ${
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-sm ${
                           (account.usageData?.subscriptionInfo?.type || '').toUpperCase().includes('PRO')
                             ? 'bg-gradient-to-br from-purple-600 to-pink-600'
                             : 'bg-gradient-to-br from-gray-500 to-gray-600'
@@ -450,7 +462,7 @@ export default function AccountsPanel({
                           {(account.nickname || account.email || 'U').charAt(0).toUpperCase()}
                         </div>
                         {/* 状态指示器 */}
-                        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 ${
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white dark:border-gray-900 ${
                           account.enabled ? 'bg-green-500' : 'bg-gray-400'
                         }`}>
                           {account.enabled && (
@@ -461,50 +473,50 @@ export default function AccountsPanel({
                     </div>
 
                     {/* 中间：主要信息 */}
-                    <div className="flex-1 min-w-0 space-y-3">
+                    <div className="flex-1 min-w-0 space-y-2">
                       {/* 标题行 */}
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-1.5">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-bold text-base truncate">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <h3 className="font-bold text-sm truncate">
                               {account.nickname || account.email}
                             </h3>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-5 px-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                              className="h-4 px-1 hover:bg-purple-100 dark:hover:bg-purple-900/30"
                               onClick={() => handleCopyId(account.id)}
                             >
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-2.5 h-2.5" />
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
-                            <Mail className="w-3 h-3" />
+                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            <Mail className="w-2.5 h-2.5" />
                             {account.email}
                           </p>
                         </div>
 
                         {/* 徽章组 */}
-                        <div className="flex flex-wrap gap-1.5 justify-end">
+                        <div className="flex flex-wrap gap-1 justify-end">
                           <Badge
-                            className={`text-xs ${
+                            className={`text-xs h-5 ${
                               (account.usageData?.subscriptionInfo?.type || '').toUpperCase().includes('PRO')
-                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-md'
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-sm'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                             }`}
                           >
-                            {account.usageData?.subscriptionInfo?.subscriptionTitle || 
-                             account.usageData?.subscriptionInfo?.type || 
-                             account.subscriptionType || 
+                            {account.usageData?.subscriptionInfo?.subscriptionTitle ||
+                             account.usageData?.subscriptionInfo?.type ||
+                             account.subscriptionType ||
                              'Free'}
                           </Badge>
                           {account.enabled ? (
-                            <Badge className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                            <Badge className="text-xs h-5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
+                              <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
                               已启用
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600">
+                            <Badge variant="outline" className="text-xs h-5 text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600">
                               已禁用
                             </Badge>
                           )}
@@ -512,30 +524,30 @@ export default function AccountsPanel({
                       </div>
 
                       {/* 统计数据网格 */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded p-1.5 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <TrendingUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                             <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">请求数</span>
                           </div>
-                          <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                          <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
                             {account.requestCount || 0}
                           </p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-lg p-2 border border-purple-200 dark:border-purple-800">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <Activity className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded p-1.5 border border-purple-200 dark:border-purple-800">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Activity className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                             <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">认证</span>
                           </div>
-                          <p className="text-sm font-bold text-purple-900 dark:text-purple-100">
+                          <p className="text-xs font-bold text-purple-900 dark:text-purple-100">
                             {account.authMethod === 'idc' ? 'IdC' : 'Social'}
                           </p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-2 border border-green-200 dark:border-green-800">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <Clock className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded p-1.5 border border-green-200 dark:border-green-800">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <Clock className="w-3 h-3 text-green-600 dark:text-green-400" />
                             <span className="text-xs text-green-700 dark:text-green-300 font-medium">最后使用</span>
                           </div>
                           <p className="text-xs font-semibold text-green-900 dark:text-green-100 truncate">
