@@ -5,9 +5,9 @@ import { Badge } from './ui/badge'
 import { Checkbox } from './ui/checkbox'
 import {
   RefreshCw, Trash2, Power, Plus, Search,
-  Eye, Loader2, AlertCircle, CheckCircle2,
-  TrendingUp, Users, Activity, Download,
-  Check, X, Copy, Mail, Clock, ChevronDown, ChevronUp
+  Eye, Loader2, Activity, Download,
+  Check, X, Copy, Mail, Clock, ChevronDown, ChevronUp,
+  CheckCircle2, TrendingUp
 } from 'lucide-react'
 import { Input } from './ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
@@ -165,13 +165,6 @@ export default function AccountsPanel({
     }
   })
 
-  const stats = {
-    total: accounts.length,
-    enabled: accounts.filter(a => a.enabled).length,
-    disabled: accounts.filter(a => !a.enabled).length,
-    pro: accounts.filter(a => a.subscriptionType?.includes('Pro')).length
-  }
-
   const getSubBadge = (type) => {
     const badges = {
       'Free': { variant: 'secondary', label: 'Free' },
@@ -194,81 +187,6 @@ export default function AccountsPanel({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Card
-          className="card-hover cursor-pointer border-0 shadow-md glass overflow-hidden group relative"
-          onClick={() => setFilterStatus('all')}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardContent className="pt-4 pb-4 relative z-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">总账户</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="card-hover cursor-pointer border-0 shadow-md glass overflow-hidden group relative"
-          onClick={() => setFilterStatus('enabled')}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardContent className="pt-4 pb-4 relative z-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">已启用</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.enabled}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-md">
-                <CheckCircle2 className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="card-hover cursor-pointer border-0 shadow-md glass overflow-hidden group relative"
-          onClick={() => setFilterStatus('disabled')}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-500/10 to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardContent className="pt-4 pb-4 relative z-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">已禁用</p>
-                <p className="text-2xl font-bold text-gray-500 dark:text-gray-400">{stats.disabled}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-slate-500 flex items-center justify-center shadow-md">
-                <AlertCircle className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="card-hover cursor-pointer border-0 shadow-md glass overflow-hidden group relative"
-          onClick={() => setFilterStatus('pro')}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardContent className="pt-4 pb-4 relative z-10">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">Pro 账户</p>
-                <p className="text-2xl font-bold text-gradient">{stats.pro}</p>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* 操作栏 */}
       <Card className="border-0 shadow-md glass">
         <CardContent className="pt-6">
@@ -444,17 +362,17 @@ export default function AccountsPanel({
                     : 'bg-gradient-to-r from-gray-400 to-gray-500'
                 }`} />
 
-                <CardContent className="pt-2 pb-2">
-                  <div className="flex gap-2">
+                <CardContent className="pt-1.5 pb-1.5">
+                  <div className="flex gap-1.5">
                     {/* 左侧：头像和选择框 */}
-                    <div className="flex flex-col items-center gap-1.5">
+                    <div className="flex flex-col items-center gap-1">
                       <Checkbox
                         checked={selectedIds.includes(account.id)}
                         onCheckedChange={() => toggleSelect(account.id)}
                         className="border"
                       />
                       <div className="relative">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow-sm ${
+                        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white shadow-sm ${
                           (account.usageData?.subscriptionInfo?.type || '').toUpperCase().includes('PRO')
                             ? 'bg-gradient-to-br from-purple-600 to-pink-600'
                             : 'bg-gradient-to-br from-gray-500 to-gray-600'
@@ -462,7 +380,7 @@ export default function AccountsPanel({
                           {(account.nickname || account.email || 'U').charAt(0).toUpperCase()}
                         </div>
                         {/* 状态指示器 */}
-                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white dark:border-gray-900 ${
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-900 ${
                           account.enabled ? 'bg-green-500' : 'bg-gray-400'
                         }`}>
                           {account.enabled && (
@@ -473,33 +391,35 @@ export default function AccountsPanel({
                     </div>
 
                     {/* 中间：主要信息 */}
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex-1 min-w-0 space-y-1.5">
                       {/* 标题行 */}
-                      <div className="flex items-start justify-between gap-1.5">
+                      <div className="flex items-start justify-between gap-1">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <h3 className="font-bold text-sm truncate">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <h3 className="font-semibold text-xs truncate">
                               {account.nickname || account.email}
                             </h3>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-4 px-1 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                              className="h-3.5 px-0.5 hover:bg-purple-100 dark:hover:bg-purple-900/30"
                               onClick={() => handleCopyId(account.id)}
                             >
                               <Copy className="w-2.5 h-2.5" />
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <Mail className="w-2.5 h-2.5" />
-                            {account.email}
-                          </p>
+                          {account.nickname && (
+                            <p className="text-xs text-muted-foreground truncate flex items-center gap-0.5">
+                              <Mail className="w-2.5 h-2.5" />
+                              {account.email}
+                            </p>
+                          )}
                         </div>
 
                         {/* 徽章组 */}
-                        <div className="flex flex-wrap gap-1 justify-end">
+                        <div className="flex flex-wrap gap-0.5 justify-end">
                           <Badge
-                            className={`text-xs h-5 ${
+                            className={`text-xs h-4 px-1 ${
                               (account.usageData?.subscriptionInfo?.type || '').toUpperCase().includes('PRO')
                                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 shadow-sm'
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
@@ -511,71 +431,59 @@ export default function AccountsPanel({
                              'Free'}
                           </Badge>
                           {account.enabled ? (
-                            <Badge className="text-xs h-5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
-                              <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" />
-                              已启用
+                            <Badge className="text-xs h-4 px-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
+                              <CheckCircle2 className="w-2 h-2 mr-0.5" />
+                              启用
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs h-5 text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600">
-                              已禁用
+                            <Badge variant="outline" className="text-xs h-4 px-1 text-gray-500 dark:text-gray-400 border-gray-400 dark:border-gray-600">
+                              禁用
                             </Badge>
                           )}
                         </div>
                       </div>
 
-                      {/* 统计数据网格 */}
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded p-1.5 border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <TrendingUp className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                            <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">请求数</span>
-                          </div>
-                          <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
-                            {account.requestCount || 0}
-                          </p>
+                      {/* 统计数据 */}
+                      <div className="flex gap-1 flex-wrap">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded px-1.5 py-0.5 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                          <TrendingUp className="w-2 h-2 text-blue-600 dark:text-blue-400" />
+                          <span className="text-xs text-blue-700 dark:text-blue-300">请求</span>
+                          <span className="text-xs font-bold text-blue-900 dark:text-blue-100">{account.requestCount || 0}</span>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded p-1.5 border border-purple-200 dark:border-purple-800">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <Activity className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                            <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">认证</span>
-                          </div>
-                          <p className="text-xs font-bold text-purple-900 dark:text-purple-100">
-                            {account.authMethod === 'idc' ? 'IdC' : 'Social'}
-                          </p>
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded px-1.5 py-0.5 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                          <Activity className="w-2 h-2 text-purple-600 dark:text-purple-400" />
+                          <span className="text-xs text-purple-700 dark:text-purple-300">认证</span>
+                          <span className="text-xs font-bold text-purple-900 dark:text-purple-100">{account.authMethod === 'idc' ? 'IdC' : 'Social'}</span>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded p-1.5 border border-green-200 dark:border-green-800">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <Clock className="w-3 h-3 text-green-600 dark:text-green-400" />
-                            <span className="text-xs text-green-700 dark:text-green-300 font-medium">最后使用</span>
-                          </div>
-                          <p className="text-xs font-semibold text-green-900 dark:text-green-100 truncate">
-                            {formatDate(account.lastUsed)}
-                          </p>
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded px-1.5 py-0.5 border border-green-200 dark:border-green-800 flex items-center gap-1">
+                          <Clock className="w-2 h-2 text-green-600 dark:text-green-400" />
+                          <span className="text-xs text-green-700 dark:text-green-300">最后</span>
+                          <span className="text-xs font-semibold text-green-900 dark:text-green-100">{formatDate(account.lastUsed)}</span>
                         </div>
                       </div>
 
                       {/* 用量和额度详情 */}
                       {breakdown && (
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded-lg p-2 border border-gray-200 dark:border-gray-700 space-y-1">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 rounded px-1.5 py-1 border border-gray-200 dark:border-gray-700 space-y-0.5">
                           {/* 标题行 */}
                           <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-1">
-                              <div className={`w-5 h-5 rounded flex items-center justify-center ${
+                            <div className="flex items-center gap-0.5">
+                              <div className={`w-4 h-4 rounded-sm flex items-center justify-center ${
                                 hasOverageUsage ? 'bg-gradient-to-br from-purple-500 to-purple-600' :
                                 isCriticalUsage ? 'bg-gradient-to-br from-red-500 to-red-600' :
                                 isHighUsage ? 'bg-gradient-to-br from-orange-500 to-orange-600' :
                                 'bg-gradient-to-br from-purple-600 to-pink-600'
                               }`}>
-                                <Activity className="w-3 h-3 text-white" />
+                                <Activity className="w-2.5 h-2.5 text-white" />
                               </div>
-                              <div className="flex items-center gap-1">
-                                <p className="text-xs font-bold">
+                              <div className="flex items-center gap-0.5">
+                                <p className="text-xs font-semibold">
                                   {breakdown.displayName || breakdown.resourceType || 'Usage'}
                                 </p>
                                 {breakdown.currency && (
-                                  <span className="text-xs px-1 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">
+                                  <span className="text-xs px-1 py-0 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                                     {breakdown.currency}
                                   </span>
                                 )}
@@ -584,44 +492,22 @@ export default function AccountsPanel({
 
                             {/* 超额状态徽章 */}
                             {overageEnabled && (
-                              <Badge className="text-xs h-4 px-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                              <Badge className="text-xs h-3.5 px-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
                                 超额
                               </Badge>
                             )}
                           </div>
 
-                          {/* 额度统计 */}
-                          <div className="grid grid-cols-3 gap-1.5">
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">已使用</p>
-                              <p className={`text-xs font-bold ${
+                          {/* 用量进度 */}
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-xs">
+                              <span className={`font-semibold ${
                                 hasOverageUsage ? 'text-purple-600 dark:text-purple-400' :
                                 isCriticalUsage ? 'text-red-600 dark:text-red-400' :
                                 isHighUsage ? 'text-orange-600 dark:text-orange-400' :
                                 'text-foreground'
                               }`}>
-                                {formatUsage(used)}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">剩余</p>
-                              <p className="text-xs font-bold text-green-600 dark:text-green-400">
-                                {formatUsage(Math.max(0, quota - used))}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">总额度</p>
-                              <p className="text-xs font-bold">
-                                {formatUsage(quota)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* 进度条 */}
-                          <div className="space-y-0.5">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">
-                                {hasOverageUsage ? '超额使用' : '使用进度'}
+                                {formatUsage(used)} / {formatUsage(quota)}
                               </span>
                               <span className={`font-semibold ${
                                 hasOverageUsage ? 'text-purple-600 dark:text-purple-400' :
@@ -632,7 +518,7 @@ export default function AccountsPanel({
                                 {hasOverageUsage ? '超额' : `${percent.toFixed(1)}%`}
                               </span>
                             </div>
-                            <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="relative h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                               <div
                                 className={`h-full transition-all duration-500 ${
                                   hasOverageUsage
@@ -650,25 +536,11 @@ export default function AccountsPanel({
 
                           {/* 超额信息 - 只有具备超额资格的账号才显示 */}
                           {hasOverageCapability && overageRate > 0 && (
-                            <div className="pt-1.5 border-t border-gray-300 dark:border-gray-600 space-y-1">
-                              {/* 超额配置信息 */}
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">超额费率</span>
-                                <span className="font-semibold">
-                                  {breakdown.currency || 'USD'} {overageRate}/credit
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">超额上限</span>
-                                <span className="font-semibold">
-                                  {formatUsage(overageCap)} {breakdown.unit?.toLowerCase() || 'credits'}
-                                </span>
-                              </div>
-
+                            <div className="pt-0.5 border-t border-gray-300 dark:border-gray-600 space-y-0.5">
                               {/* 当前超额使用 */}
-                              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-300 dark:border-gray-600">
+                              <div className="flex items-center justify-between text-xs">
                                 <span className={hasOverageUsage ? "text-purple-600 dark:text-purple-400 font-bold" : "text-muted-foreground"}>
-                                  当前超额
+                                  超额
                                 </span>
                                 <span className={hasOverageUsage ? "font-bold text-purple-600 dark:text-purple-400" : "text-muted-foreground"}>
                                   {formatUsage(overageUsed)} / {formatUsage(overageCap)}
@@ -676,7 +548,7 @@ export default function AccountsPanel({
                               </div>
 
                               {/* 超额进度条 */}
-                              <div className="h-1.5 rounded-full bg-purple-500/10 overflow-hidden">
+                              <div className="h-1 rounded-full bg-purple-500/10 overflow-hidden">
                                 <div
                                   className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
                                   style={{ width: `${overageCap > 0 ? Math.min((overageUsed / overageCap) * 100, 100) : 0}%` }}
@@ -685,8 +557,8 @@ export default function AccountsPanel({
 
                               {/* 超额费用 */}
                               {overageCharges > 0 && (
-                                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-300 dark:border-gray-600">
-                                  <span className="text-muted-foreground">超额费用</span>
+                                <div className="flex items-center justify-between text-xs pt-0.5 border-t border-gray-300 dark:border-gray-600">
+                                  <span className="text-muted-foreground">费用</span>
                                   <span className="font-bold text-red-600 dark:text-red-400">
                                     {breakdown.currency || 'USD'} {overageCharges.toFixed(2)}
                                   </span>
@@ -697,8 +569,8 @@ export default function AccountsPanel({
 
                           {/* 重置时间 */}
                           {breakdown.nextDateReset && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1.5 border-t border-gray-300 dark:border-gray-600">
-                              <Clock className="w-3 h-3" />
+                            <div className="flex items-center gap-0.5 text-xs text-muted-foreground pt-0.5 border-t border-gray-300 dark:border-gray-600">
+                              <Clock className="w-2.5 h-2.5" />
                               <span>
                                 {new Date(breakdown.nextDateReset * 1000).toLocaleString('zh-CN', {
                                   month: '2-digit',
@@ -714,22 +586,22 @@ export default function AccountsPanel({
                     </div>
 
                     {/* 右侧：操作按钮 */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
                       <Button
                         size="icon"
                         variant="outline"
                         onClick={() => onShowDetail(account.id)}
-                        className="border-2 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 btn-scale"
+                        className="h-7 w-7 border hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 btn-scale"
                         title="查看详情"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-3.5 h-3.5" />
                       </Button>
                       <Button
                         size="icon"
                         variant="outline"
                         onClick={() => handleAction(account.id, () => onToggle(account.id, account.enabled))}
                         disabled={actionLoading[account.id] === 'toggle'}
-                        className={`border-2 btn-scale ${
+                        className={`h-7 w-7 border btn-scale ${
                           account.enabled
                             ? 'hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30'
                             : 'hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-950/30'
@@ -737,9 +609,9 @@ export default function AccountsPanel({
                         title={account.enabled ? '禁用账户' : '启用账户'}
                       >
                         {actionLoading[account.id] === 'toggle' ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <Power className="w-4 h-4" />
+                          <Power className="w-3.5 h-3.5" />
                         )}
                       </Button>
                       <Button
@@ -747,23 +619,23 @@ export default function AccountsPanel({
                         variant="outline"
                         onClick={() => handleAction(account.id, () => onRefreshAccount(account.id))}
                         disabled={actionLoading[account.id] === 'refresh'}
-                        className="border-2 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale"
+                        className="h-7 w-7 border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale"
                         title="刷新账户信息"
                       >
                         {actionLoading[account.id] === 'refresh' ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <RefreshCw className="w-4 h-4" />
+                          <RefreshCw className="w-3.5 h-3.5" />
                         )}
                       </Button>
                       <Button
                         size="icon"
                         variant="destructive"
                         onClick={() => onDelete(account.id)}
-                        className="shadow-md hover:shadow-lg btn-scale"
+                        className="h-7 w-7 shadow-sm hover:shadow-md btn-scale"
                         title="删除账户"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </div>
