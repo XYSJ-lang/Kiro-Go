@@ -30,7 +30,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] glass border-2 border-border shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
+          <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
             <div className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
               <User className="w-5 h-5 text-white" />
             </div>
