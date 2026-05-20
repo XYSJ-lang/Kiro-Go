@@ -428,17 +428,24 @@ export default function AccountsPanel({
             return (
               <Card
                 key={account.id}
-                className="card-hover border-0 shadow-md glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2"
+                className={`card-hover border-0 shadow-md glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2 ${
+                  !account.enabled ? 'opacity-50 grayscale hover:opacity-60 transition-opacity' : ''
+                }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* 顶部装饰条 */}
                 <div className={`absolute top-0 left-0 right-0 h-1 ${
                   account.enabled
                     ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500'
-                    : 'bg-gradient-to-r from-muted-foreground to-muted-foreground'
+                    : 'bg-gradient-to-r from-gray-400 to-gray-500'
                 }`} />
 
-                <CardContent className="pt-1.5 pb-1.5">
+                {/* 禁用遮罩 */}
+                {!account.enabled && (
+                  <div className="absolute inset-0 bg-gray-900/5 dark:bg-gray-100/5 pointer-events-none" />
+                )}
+
+                <CardContent className="pt-1.5 pb-1.5 relative z-10">
                   <div className="flex gap-1.5">
                     {/* 左侧：头像和选择框 */}
                     <div className="flex flex-col items-center gap-0.5">

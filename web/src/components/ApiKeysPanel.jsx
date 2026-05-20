@@ -143,19 +143,26 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
             return (
               <Card
                 key={key.id}
-                className="card-hover border-0 shadow-md glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2"
+                className={`card-hover border-0 shadow-md glass overflow-hidden group relative animate-in fade-in slide-in-from-bottom-2 ${
+                  !isEnabled ? 'opacity-50 grayscale hover:opacity-60 transition-opacity' : ''
+                }`}
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 {/* 顶部状态条 */}
                 <div className={`absolute top-0 left-0 right-0 h-1 ${
                   !isEnabled
-                    ? 'bg-muted'
+                    ? 'bg-gradient-to-r from-gray-400 to-gray-500'
                     : key.lastUsed
                     ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500'
                     : 'bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500'
                 }`} />
 
-                <CardContent className="pt-4 pb-3">
+                {/* 禁用遮罩 */}
+                {!isEnabled && (
+                  <div className="absolute inset-0 bg-gray-900/5 dark:bg-gray-100/5 pointer-events-none" />
+                )}
+
+                <CardContent className="pt-4 pb-3 relative z-10">
                   {/* 主要信息行 */}
                   <div className="flex items-center gap-3">
                     {/* 左侧：图标和基本信息 */}
