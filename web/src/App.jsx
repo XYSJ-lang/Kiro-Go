@@ -9,6 +9,7 @@ import ApiKeysPanel from './components/ApiKeysPanel'
 import SettingsPanel from './components/SettingsPanel'
 import AccountDetailModal from './components/AccountDetailModal'
 import AddAccountModal from './components/AddAccountModal'
+import CreateApiKeyModal from './components/CreateApiKeyModal'
 import ConfirmDialog from './components/ConfirmDialog'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
 import { Button } from './components/ui/button'
@@ -23,6 +24,7 @@ function AppContent() {
   const [loading, setLoading] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [createKeyOpen, setCreateKeyOpen] = useState(false)
   const [accountDetail, setAccountDetail] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAccounts, setSelectedAccounts] = useState([])
@@ -326,30 +328,6 @@ function AppContent() {
     }
   }
 
-  const createApiKey = async () => {
-    const name = window.prompt('请输入API密钥名称')
-    if (!name) return
-
-    try {
-      const res = await fetch('/admin/api/keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-Password': password
-        },
-        body: JSON.stringify({ name })
-      })
-      const data = await res.json()
-      if (data.key) {
-        loadApiKeys()
-        toast.success('API密钥创建成功，请保存: ' + data.key, { duration: 10000 })
-      } else {
-        toast.error('创建失败')
-      }
-    } catch (e) {
-      toast.error('创建失败')
-    }
-  }
 
   const deleteApiKey = async (id) => {
     setConfirmDialog({
@@ -460,7 +438,7 @@ function AppContent() {
             <ApiKeysPanel
               apiKeys={apiKeys}
               loading={loading}
-              onCreate={createApiKey}
+              onCreate={() => setCreateKeyOpen(true)}
               onDelete={deleteApiKey}
             />
           </TabsContent>
@@ -482,6 +460,13 @@ function AppContent() {
         onOpenChange={setAddOpen}
         password={password}
         onSuccess={() => loadAccounts()}
+      />
+
+      <CreateApiKeyModal
+        open={createKeyOpen}
+        onOpenChange={setCreateKeyOpen}
+        password={password}
+        onSuccess={() => loadApiKeys()}
       />
 
       <ConfirmDialog
