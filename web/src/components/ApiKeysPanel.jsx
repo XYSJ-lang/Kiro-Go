@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
@@ -12,10 +13,11 @@ import {
 import { toast } from 'sonner'
 
 export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onRefresh, onToggle, onEdit, onTest }) {
+  const { t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState('')
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return '从未'
+    if (!timestamp) return t('apiKeys.fields.neverUsed')
     return new Date(timestamp * 1000).toLocaleString('zh-CN', {
       month: 'short',
       day: 'numeric',
@@ -26,8 +28,8 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
 
   const handleCopyId = (id) => {
     navigator.clipboard.writeText(id)
-      .then(() => toast.success('已复制密钥 ID'))
-      .catch(() => toast.error('复制失败'))
+      .then(() => toast.success(t('apiKeys.copySuccess')))
+      .catch(() => toast.error(t('apiKeys.copyError')))
   }
 
   const filteredKeys = apiKeys.filter(key => 
@@ -52,7 +54,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                 <Key className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">总密钥数</p>
+                <p className="text-xs text-muted-foreground">{t('apiKeys.total')}</p>
                 <p className="text-xl font-bold">{stats.total}</p>
               </div>
             </div>
@@ -66,7 +68,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">已启用</p>
+                <p className="text-xs text-muted-foreground">{t('apiKeys.enabled')}</p>
                 <p className="text-xl font-bold">{stats.enabled}</p>
               </div>
             </div>
@@ -80,7 +82,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">已使用</p>
+                <p className="text-xs text-muted-foreground">{t('apiKeys.active')}</p>
                 <p className="text-xl font-bold">{stats.active}</p>
               </div>
             </div>
@@ -93,7 +95,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
         <CardContent className="pt-4 pb-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
-              placeholder="搜索密钥名称或 ID..."
+              placeholder={t('apiKeys.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 border-2 focus:border-purple-500 dark:focus:border-purple-400"
@@ -103,7 +105,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md hover:shadow-lg transition-all btn-scale"
             >
               <Plus className="w-4 h-4 mr-2" />
-              创建密钥
+              {t('apiKeys.create')}
             </Button>
           </div>
         </CardContent>
@@ -113,22 +115,22 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin mb-4" />
-          <p>加载中...</p>
+          <p>{t('common.loading')}</p>
         </div>
       ) : filteredKeys.length === 0 ? (
         <Card className="border-0 shadow-md glass">
           <CardContent className="py-16 text-center">
             <Key className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium text-muted-foreground mb-2">
-              {searchTerm ? '未找到匹配的密钥' : '暂无 API 密钥'}
+              {searchTerm ? t('apiKeys.noMatch') : t('apiKeys.noKeys')}
             </p>
             <p className="text-sm text-muted-foreground mb-4">
-              {searchTerm ? '尝试使用其他关键词搜索' : '创建密钥以访问 API 服务'}
+              {searchTerm ? t('apiKeys.tryOtherKeywords') : t('apiKeys.createToAccess')}
             </p>
             {!searchTerm && (
               <Button onClick={onCreate} variant="outline" className="border-2 border-border">
                 <Plus className="w-4 h-4 mr-2" />
-                创建第一个密钥
+                {t('apiKeys.createFirst')}
               </Button>
             )}
           </CardContent>
@@ -182,17 +184,17 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                           {!isEnabled ? (
                             <Badge variant="secondary" className="text-xs h-5 px-2">
                               <XCircle className="w-3 h-3 mr-1" />
-                              已禁用
+                              {t('apiKeys.fields.disabled')}
                             </Badge>
                           ) : key.lastUsed ? (
                             <Badge className="text-xs h-5 px-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
                               <CheckCircle2 className="w-3 h-3 mr-1" />
-                              运行中
+                              {t('apiKeys.status.active')}
                             </Badge>
                           ) : (
                             <Badge className="text-xs h-5 px-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 border">
                               <Zap className="w-3 h-3 mr-1" />
-                              就绪
+                              {t('apiKeys.status.ready')}
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">
@@ -209,7 +211,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                         size="icon"
                         className="h-8 w-8 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                         onClick={() => onEdit && onEdit(key)}
-                        title="编辑"
+                        title={t('apiKeys.actions.edit')}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -218,7 +220,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                         size="icon"
                         className="h-8 w-8 hover:bg-green-100 dark:hover:bg-green-900/30"
                         onClick={() => onTest && onTest(key.id)}
-                        title="测试连接"
+                        title={t('apiKeys.actions.test')}
                       >
                         <TestTube className="w-4 h-4" />
                       </Button>
@@ -227,7 +229,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                         size="icon"
                         className="h-8 w-8 hover:bg-orange-100 dark:hover:bg-orange-900/30"
                         onClick={() => onRefresh && onRefresh(key.id)}
-                        title="刷新"
+                        title={t('apiKeys.actions.refresh')}
                       >
                         <RefreshCw className="w-4 h-4" />
                       </Button>
@@ -236,7 +238,7 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => onDelete(key.id)}
-                        title="删除"
+                        title={t('apiKeys.actions.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

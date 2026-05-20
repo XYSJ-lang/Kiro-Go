@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -13,6 +14,7 @@ import {
 import { toast } from 'sonner'
 
 export default function LogsPanel({ password }) {
+  const { t } = useTranslation()
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
@@ -40,10 +42,10 @@ export default function LogsPanel({ password }) {
         setTotal(data.total || 0)
         setTotalPages(data.pages || 0)
       } else {
-        toast.error('加载日志失败')
+        toast.error(t('logs.messages.loadError'))
       }
     } catch (e) {
-      toast.error('加载日志失败')
+      toast.error(t('logs.messages.loadError'))
     } finally {
       setLoading(false)
     }
@@ -55,7 +57,7 @@ export default function LogsPanel({ password }) {
   }
 
   const clearLogs = async () => {
-    if (!confirm('确定要清空所有日志吗？此操作无法撤销。')) {
+    if (!confirm(t('logs.messages.clearConfirm'))) {
       return
     }
     try {
@@ -69,12 +71,12 @@ export default function LogsPanel({ password }) {
         setTotal(0)
         setTotalPages(0)
         setPage(1)
-        toast.success('日志已清空')
+        toast.success(t('logs.messages.clearSuccess'))
       } else {
-        toast.error('清空日志失败')
+        toast.error(t('logs.messages.clearError'))
       }
     } catch (e) {
-      toast.error('清空日志失败')
+      toast.error(t('logs.messages.clearError'))
     }
   }
 
@@ -101,14 +103,14 @@ export default function LogsPanel({ password }) {
       return (
         <Badge className="text-xs border bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
           <CheckCircle2 className="w-3 h-3 mr-1" />
-          成功
+          {t('logs.success')}
         </Badge>
       )
     } else {
       return (
         <Badge className="text-xs border bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700">
           <XCircle className="w-3 h-3 mr-1" />
-          失败
+          {t('logs.failed')}
         </Badge>
       )
     }
@@ -198,7 +200,7 @@ export default function LogsPanel({ password }) {
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">总请求数</p>
+                <p className="text-xs text-muted-foreground">{t('logs.totalRequests')}</p>
                 <p className="text-xl font-bold">{stats.totalRequests}</p>
               </div>
             </div>
@@ -212,7 +214,7 @@ export default function LogsPanel({ password }) {
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">成功</p>
+                <p className="text-xs text-muted-foreground">{t('logs.success')}</p>
                 <p className="text-xl font-bold">{stats.successCount}</p>
               </div>
             </div>
@@ -226,7 +228,7 @@ export default function LogsPanel({ password }) {
                 <XCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">失败</p>
+                <p className="text-xs text-muted-foreground">{t('logs.failed')}</p>
                 <p className="text-xl font-bold">{stats.errorCount}</p>
               </div>
             </div>
@@ -240,7 +242,7 @@ export default function LogsPanel({ password }) {
                 <Zap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">总 Tokens</p>
+                <p className="text-xs text-muted-foreground">{t('logs.totalTokens')}</p>
                 <p className="text-xl font-bold">{formatNumber(stats.totalTokens)}</p>
               </div>
             </div>
@@ -259,7 +261,7 @@ export default function LogsPanel({ password }) {
                 onClick={() => setFilterStatus('all')}
                 className="border-2"
               >
-                全部
+                {t('logs.filters.all')}
               </Button>
               <Button
                 variant={filterStatus === 'success' ? 'default' : 'outline'}
@@ -267,7 +269,7 @@ export default function LogsPanel({ password }) {
                 onClick={() => setFilterStatus('success')}
                 className="border-2"
               >
-                成功
+                {t('logs.filters.success')}
               </Button>
               <Button
                 variant={filterStatus === 'error' ? 'default' : 'outline'}
@@ -275,7 +277,7 @@ export default function LogsPanel({ password }) {
                 onClick={() => setFilterStatus('error')}
                 className="border-2"
               >
-                失败
+                {t('logs.filters.failed')}
               </Button>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -285,7 +287,7 @@ export default function LogsPanel({ password }) {
                   onChange={(e) => setFilterModel(e.target.value)}
                   className="text-xs border-2 rounded-md px-2 py-1 bg-background"
                 >
-                  <option value="all">所有模型</option>
+                  <option value="all">{t('logs.filters.allModels')}</option>
                   {uniqueModels.map(model => (
                     <option key={model} value={model}>{model}</option>
                   ))}
@@ -297,7 +299,7 @@ export default function LogsPanel({ password }) {
                   onChange={(e) => setFilterAccount(e.target.value)}
                   className="text-xs border-2 rounded-md px-2 py-1 bg-background"
                 >
-                  <option value="all">所有账户</option>
+                  <option value="all">{t('logs.filters.allAccounts')}</option>
                   {uniqueAccounts.map(account => (
                     <option key={account} value={account}>{account}</option>
                   ))}
@@ -308,12 +310,12 @@ export default function LogsPanel({ password }) {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="text-xs border-2 rounded-md px-2 py-1 bg-background"
               >
-                <option value="time-desc">最新优先</option>
-                <option value="time-asc">最旧优先</option>
-                <option value="tokens-desc">Token多→少</option>
-                <option value="tokens-asc">Token少→多</option>
-                <option value="duration-desc">耗时长→短</option>
-                <option value="duration-asc">耗时短→长</option>
+                <option value="time-desc">{t('logs.sort.timeDesc')}</option>
+                <option value="time-asc">{t('logs.sort.timeAsc')}</option>
+                <option value="tokens-desc">{t('logs.sort.tokensDesc')}</option>
+                <option value="tokens-asc">{t('logs.sort.tokensAsc')}</option>
+                <option value="duration-desc">{t('logs.sort.durationDesc')}</option>
+                <option value="duration-asc">{t('logs.sort.durationAsc')}</option>
               </select>
               <Button
                 variant="outline"
@@ -347,7 +349,7 @@ export default function LogsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            请求日志
+            {t('logs.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -358,7 +360,7 @@ export default function LogsPanel({ password }) {
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">暂无请求记录</p>
+              <p className="text-muted-foreground">{t('logs.noLogs')}</p>
             </div>
           ) : (
             <ScrollArea className="h-[600px] pr-4">
@@ -393,7 +395,7 @@ export default function LogsPanel({ password }) {
                         )}
                         {log.stream !== undefined && (
                           <Badge variant="outline" className="text-xs">
-                            {log.stream ? '🌊 流式' : '📦 非流式'}
+                            {log.stream ? t('logs.stream.streaming') : t('logs.stream.nonStreaming')}
                           </Badge>
                         )}
                       </div>
@@ -449,7 +451,7 @@ export default function LogsPanel({ password }) {
                         <div className="flex items-center gap-1.5 px-2 py-1.5 bg-cyan-100 dark:bg-cyan-900/30 rounded-md">
                           <Database className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                           <span className="text-xs font-medium text-cyan-700 dark:text-cyan-300">
-                            创建 {formatNumber(log.cacheCreationInputTokens)}
+                            {t('logs.cache.creation')} {formatNumber(log.cacheCreationInputTokens)}
                           </span>
                         </div>
                       )}
@@ -457,7 +459,7 @@ export default function LogsPanel({ password }) {
                         <div className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-md">
                           <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                            读取 {formatNumber(log.cacheReadInputTokens)}
+                            {t('logs.cache.read')} {formatNumber(log.cacheReadInputTokens)}
                           </span>
                         </div>
                       )}
@@ -476,7 +478,7 @@ export default function LogsPanel({ password }) {
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                共 {total} 条记录，第 {page}/{totalPages} 页
+                {t('logs.pagination.total', { total, page, totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button

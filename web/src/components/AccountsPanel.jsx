@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
@@ -57,6 +58,7 @@ export default function AccountsPanel({
   onSelectedAccountsChange,
   password
 }) {
+  const { t } = useTranslation()
   const [actionLoading, setActionLoading] = useState({})
   const [filterStatus, setFilterStatus] = useState('all')
   const [sortBy, setSortBy] = useState('lastUsed')
@@ -84,14 +86,14 @@ export default function AccountsPanel({
       })
 
       if (res.ok) {
-        toast.success(enabled ? '超额计费已启用' : '超额计费已关闭')
+        toast.success(enabled ? t('accounts.overage.enabled') : t('accounts.overage.disabled'))
         onRefresh()
       } else {
         const data = await res.json()
-        toast.error(data.error || '操作失败')
+        toast.error(data.error || t('common.error'))
       }
     } catch (e) {
-      toast.error('操作失败')
+      toast.error(t('common.error'))
     } finally {
       setOverageLoading(prev => ({ ...prev, [accountId]: false }))
     }
@@ -139,29 +141,29 @@ export default function AccountsPanel({
       lastUsed: acc.lastUsed
     }))
     exportToJSON(exportData, `accounts-${new Date().toISOString().split('T')[0]}.json`)
-    toast.success('已导出为 JSON 文件')
+    toast.success(t('accounts.export.jsonSuccess'))
   }
 
   const handleExportCSV = () => {
     const exportData = filteredAccounts.map(acc => ({
       ID: acc.id,
-      邮箱: acc.email,
-      昵称: acc.nickname || '',
-      状态: acc.enabled ? '已启用' : '已禁用',
-      订阅类型: acc.subscriptionType || 'Free',
-      认证方式: acc.authMethod === 'idc' ? 'IdC' : 'Social',
-      提供商: acc.provider || '',
-      请求次数: acc.requestCount || 0,
-      最后使用: acc.lastUsed ? new Date(acc.lastUsed * 1000).toLocaleString('zh-CN') : '从未'
+      [t('accounts.fields.email')]: acc.email,
+      [t('accounts.fields.nickname')]: acc.nickname || '',
+      [t('accounts.fields.status')]: acc.enabled ? t('common.enabled') : t('common.disabled'),
+      [t('accounts.fields.subscription')]: acc.subscriptionType || 'Free',
+      [t('accounts.fields.authMethod')]: acc.authMethod === 'idc' ? 'IdC' : 'Social',
+      [t('accounts.fields.provider')]: acc.provider || '',
+      [t('accounts.fields.requests')]: acc.requestCount || 0,
+      [t('accounts.fields.lastUsed')]: acc.lastUsed ? new Date(acc.lastUsed * 1000).toLocaleString('zh-CN') : t('accounts.never')
     }))
     exportToCSV(exportData, `accounts-${new Date().toISOString().split('T')[0]}.csv`)
-    toast.success('已导出为 CSV 文件')
+    toast.success(t('accounts.export.csvSuccess'))
   }
 
   const handleCopyId = (id) => {
     copyToClipboard(id)
-      .then(() => toast.success('已复制账户 ID'))
-      .catch(() => toast.error('复制失败'))
+      .then(() => toast.success(t('accounts.copyIdSuccess')))
+      .catch(() => toast.error(t('accounts.copyIdError')))
   }
 
   let filteredAccounts = accounts.filter(acc => {
@@ -212,7 +214,7 @@ export default function AccountsPanel({
   }
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return '从未'
+    if (!timestamp) return t('accounts.never')
     return new Date(timestamp * 1000).toLocaleString('zh-CN', {
       month: 'short',
       day: 'numeric',
@@ -247,7 +249,7 @@ export default function AccountsPanel({
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     ref={searchInputRef}
-                    placeholder="搜索账户（邮箱、昵称、ID）..."
+                    placeholder={t('accounts.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="pl-9 w-full border-2 focus:border-purple-500 dark:focus:border-purple-400 transition-colors"
@@ -257,29 +259,29 @@ export default function AccountsPanel({
               <div className="flex gap-2 w-full sm:w-auto flex-wrap">
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-[140px] border-2">
-                    <SelectValue placeholder="筛选" />
+                    <SelectValue placeholder={t('common.filter')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部账户</SelectItem>
-                    <SelectItem value="enabled">已启用</SelectItem>
-                    <SelectItem value="disabled">已禁用</SelectItem>
-                    <SelectItem value="free">Free</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="idc">IdC认证</SelectItem>
-                    <SelectItem value="social">Social认证</SelectItem>
-                    <SelectItem value="high-usage">高用量(&gt;80%)</SelectItem>
-                    <SelectItem value="overage">超额使用</SelectItem>
+                    <SelectItem value="all">{t('accounts.filters.all')}</SelectItem>
+                    <SelectItem value="enabled">{t('accounts.filters.enabled')}</SelectItem>
+                    <SelectItem value="disabled">{t('accounts.filters.disabled')}</SelectItem>
+                    <SelectItem value="free">{t('accounts.filters.free')}</SelectItem>
+                    <SelectItem value="pro">{t('accounts.filters.pro')}</SelectItem>
+                    <SelectItem value="idc">{t('accounts.filters.idc')}</SelectItem>
+                    <SelectItem value="social">{t('accounts.filters.social')}</SelectItem>
+                    <SelectItem value="high-usage">{t('accounts.filters.highUsage')}</SelectItem>
+                    <SelectItem value="overage">{t('accounts.filters.overage')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-[140px] border-2">
-                    <SelectValue placeholder="排序" />
+                    <SelectValue placeholder={t('accounts.sort.label')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="lastUsed">最后使用</SelectItem>
-                    <SelectItem value="email">邮箱</SelectItem>
-                    <SelectItem value="requests">请求次数</SelectItem>
-                    <SelectItem value="usage">用量百分比</SelectItem>
+                    <SelectItem value="lastUsed">{t('accounts.sort.lastUsed')}</SelectItem>
+                    <SelectItem value="email">{t('accounts.sort.email')}</SelectItem>
+                    <SelectItem value="requests">{t('accounts.sort.requests')}</SelectItem>
+                    <SelectItem value="usage">{t('accounts.sort.usage')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -288,36 +290,36 @@ export default function AccountsPanel({
                   className="border-2 border-border"
                 >
                   <Upload className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">导入</span>
+                  <span className="hidden sm:inline">{t('accounts.import')}</span>
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="border-2 border-border">
                       <Download className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">导出</span>
+                      <span className="hidden sm:inline">{t('common.export')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="glass">
-                    <DropdownMenuLabel>导出格式</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('accounts.export.label')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleExportJSON}>
-                      导出为 JSON
+                      {t('accounts.export.json')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleExportCSV}>
-                      导出为 CSV
+                      {t('accounts.export.csv')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button onClick={onRefresh} variant="outline" disabled={loading} className="border-2 border-border btn-scale">
                   <RefreshCw className={`w-4 h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">刷新</span>
+                  <span className="hidden sm:inline">{t('accounts.refresh')}</span>
                 </Button>
                 <Button
                   onClick={onAdd}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md hover:shadow-lg transition-all btn-scale"
                 >
                   <Plus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">添加</span>
+                  <span className="hidden sm:inline">{t('accounts.add')}</span>
                 </Button>
               </div>
             </div>
@@ -333,7 +335,7 @@ export default function AccountsPanel({
                       className="border-2"
                     />
                     <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                      已选择 {selectedIds.length} 个账户
+                      {t('accounts.batch.selected', { count: selectedIds.length })}
                     </span>
                   </div>
                   <div className="flex gap-2 flex-wrap">
@@ -342,12 +344,12 @@ export default function AccountsPanel({
                       variant="outline"
                       onClick={() => handleBatchAction(async (ids) => {
                         await Promise.all(ids.map(id => onRefreshAccount(id)))
-                        toast.success(`已刷新 ${ids.length} 个账户`)
+                        toast.success(t('accounts.batch.refreshSuccess', { count: ids.length }))
                       })}
                       className="border-2 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale"
                     >
                       <RefreshCw className="w-4 h-4 mr-1" />
-                      批量刷新
+                      {t('accounts.batch.refresh')}
                     </Button>
                     <Button
                       size="sm"
@@ -356,7 +358,7 @@ export default function AccountsPanel({
                       className="border-2 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-950/30 btn-scale"
                     >
                       <Check className="w-4 h-4 mr-1" />
-                      批量启用
+                      {t('accounts.batch.enable')}
                     </Button>
                     <Button
                       size="sm"
@@ -365,7 +367,7 @@ export default function AccountsPanel({
                       className="border-2 border-border hover:bg-secondary btn-scale"
                     >
                       <X className="w-4 h-4 mr-1" />
-                      批量禁用
+                      {t('accounts.batch.disable')}
                     </Button>
                     <Button
                       size="sm"
@@ -374,7 +376,7 @@ export default function AccountsPanel({
                       className="shadow-md hover:shadow-lg btn-scale"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      批量删除
+                      {t('accounts.batch.delete')}
                     </Button>
                   </div>
                 </div>
@@ -388,19 +390,19 @@ export default function AccountsPanel({
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin mb-4" />
-          <p>加载中...</p>
+          <p>{t('common.loading')}</p>
         </div>
       ) : filteredAccounts.length === 0 ? (
         <Card className="border-0 shadow-md glass">
           <CardContent className="py-16 text-center">
             <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium text-muted-foreground mb-2">
-              {searchTerm || filterStatus !== 'all' ? '未找到匹配的账户' : '暂无账户'}
+              {searchTerm || filterStatus !== 'all' ? t('accounts.noMatch') : t('accounts.noAccounts')}
             </p>
             {!searchTerm && filterStatus === 'all' && (
               <Button onClick={onAdd} variant="outline" className="mt-4 border-2 border-border">
                 <Plus className="w-4 h-4 mr-2" />
-                添加第一个账户
+                {t('accounts.addFirst')}
               </Button>
             )}
           </CardContent>
@@ -507,11 +509,11 @@ export default function AccountsPanel({
                           {account.enabled ? (
                             <Badge className="text-xs h-4 px-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700 border">
                               <CheckCircle2 className="w-2 h-2 mr-0.5" />
-                              启用
+                              {t('accounts.status.enabled')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs h-4 px-1 text-muted-foreground border-border">
-                              禁用
+                              {t('accounts.status.disabled')}
                             </Badge>
                           )}
                         </div>
@@ -521,19 +523,19 @@ export default function AccountsPanel({
                       <div className="flex gap-0.5 flex-wrap">
                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded px-1 py-0.5 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
                           <TrendingUp className="w-2 h-2 text-blue-600 dark:text-blue-400" />
-                          <span className="text-xs text-blue-700 dark:text-blue-300">请求</span>
+                          <span className="text-xs text-blue-700 dark:text-blue-300">{t('accounts.stats.requests')}</span>
                           <span className="text-xs font-bold text-blue-900 dark:text-blue-100">{formatNumber(account.requestCount || 0)}</span>
                         </div>
 
                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded px-1 py-0.5 border border-purple-200 dark:border-purple-800 flex items-center gap-0.5">
                           <Activity className="w-2 h-2 text-purple-600 dark:text-purple-400" />
-                          <span className="text-xs text-purple-700 dark:text-purple-300">认证</span>
+                          <span className="text-xs text-purple-700 dark:text-purple-300">{t('accounts.stats.auth')}</span>
                           <span className="text-xs font-bold text-purple-900 dark:text-purple-100">{account.authMethod === 'idc' ? 'IdC' : 'Social'}</span>
                         </div>
 
                         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded px-1 py-0.5 border border-green-200 dark:border-green-800 flex items-center gap-0.5">
                           <Clock className="w-2 h-2 text-green-600 dark:text-green-400" />
-                          <span className="text-xs text-green-700 dark:text-green-300">最后</span>
+                          <span className="text-xs text-green-700 dark:text-green-300">{t('accounts.stats.lastUsed')}</span>
                           <span className="text-xs font-semibold text-green-900 dark:text-green-100">{formatDate(account.lastUsed)}</span>
                         </div>
                       </div>
@@ -567,7 +569,7 @@ export default function AccountsPanel({
                             {/* 超额状态徽章 */}
                             {overageEnabled && (
                               <Badge className="text-xs h-3.5 px-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
-                                超额
+                                {t('accounts.overage.badge')}
                               </Badge>
                             )}
                           </div>
@@ -589,7 +591,7 @@ export default function AccountsPanel({
                                 isHighUsage ? 'text-orange-600 dark:text-orange-400' :
                                 'text-foreground'
                               }`}>
-                                {hasOverageUsage ? '超额' : `${percent.toFixed(1)}%`}
+                                {hasOverageUsage ? t('accounts.overage.exceeded') : `${percent.toFixed(1)}%`}
                               </span>
                             </div>
                             <div className="relative h-1 bg-secondary rounded-full overflow-hidden">
@@ -617,7 +619,7 @@ export default function AccountsPanel({
                                   <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                                     <Activity className="w-2.5 h-2.5 text-white" />
                                   </div>
-                                  <span className="text-xs font-medium text-purple-900 dark:text-purple-100">超额计费</span>
+                                  <span className="text-xs font-medium text-purple-900 dark:text-purple-100">{t('accounts.overage.billing')}</span>
                                 </div>
                                 <Switch
                                   checked={overageEnabled}
@@ -630,7 +632,7 @@ export default function AccountsPanel({
                               {/* 当前超额使用 */}
                               <div className="flex items-center justify-between text-xs mb-0.5">
                                 <span className={hasOverageUsage ? "text-purple-600 dark:text-purple-400 font-bold" : "text-muted-foreground"}>
-                                  已用超额
+                                  {t('accounts.overage.used')}
                                 </span>
                                 <span className={hasOverageUsage ? "font-bold text-purple-600 dark:text-purple-400" : "text-muted-foreground"}>
                                   {formatUsage(overageUsed)} / {formatUsage(overageCap)}
@@ -648,7 +650,7 @@ export default function AccountsPanel({
                               {/* 超额费用 */}
                               {overageCharges > 0 && (
                                 <div className="flex items-center justify-between text-xs p-1 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800/50">
-                                  <span className="text-red-700 dark:text-red-300 font-medium">已产生费用</span>
+                                  <span className="text-red-700 dark:text-red-300 font-medium">{t('accounts.overage.charges')}</span>
                                   <span className="font-bold text-red-600 dark:text-red-400">
                                     {breakdown.currency || 'USD'} {overageCharges.toFixed(2)}
                                   </span>
@@ -682,7 +684,7 @@ export default function AccountsPanel({
                         variant="outline"
                         onClick={() => onShowDetail(account.id)}
                         className="h-7 w-7 border border-border hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 btn-scale"
-                        title="查看详情"
+                        title={t('accounts.actions.viewDetail')}
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </Button>
@@ -696,7 +698,7 @@ export default function AccountsPanel({
                             ? 'hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30'
                             : 'hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950/30'
                         }`}
-                        title={account.enabled ? '禁用账户' : '启用账户'}
+                        title={account.enabled ? t('accounts.actions.disable') : t('accounts.actions.enable')}
                       >
                         {actionLoading[account.id] === 'toggle' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -710,7 +712,7 @@ export default function AccountsPanel({
                         onClick={() => handleAction(account.id, () => onRefreshAccount(account.id))}
                         disabled={actionLoading[account.id] === 'refresh'}
                         className="h-7 w-7 border border-border hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 btn-scale"
-                        title="刷新账户信息"
+                        title={t('accounts.actions.refreshInfo')}
                       >
                         {actionLoading[account.id] === 'refresh' ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -723,7 +725,7 @@ export default function AccountsPanel({
                         variant="destructive"
                         onClick={() => onDelete(account.id)}
                         className="h-7 w-7 shadow-sm hover:shadow-md btn-scale"
-                        title="删除账户"
+                        title={t('accounts.actions.deleteAccount')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>

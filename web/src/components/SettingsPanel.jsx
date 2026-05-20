@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -9,6 +10,7 @@ import { toast } from 'sonner'
 import { Trash2, Plus } from 'lucide-react'
 
 export default function SettingsPanel({ password }) {
+  const { t } = useTranslation()
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
     port: 8080,
@@ -90,7 +92,7 @@ export default function SettingsPanel({ password }) {
       }
     } catch (e) {
       console.error('Failed to load settings:', e)
-      toast.error('加载设置失败')
+      toast.error(t('settings.loadError'))
     }
   }
 
@@ -144,9 +146,9 @@ export default function SettingsPanel({ password }) {
         body: JSON.stringify(promptFilter)
       })
 
-      toast.success('设置保存成功')
+      toast.success(t('settings.saveSuccess'))
     } catch (e) {
-      toast.error('设置保存失败: ' + e.message)
+      toast.error(t('settings.saveError') + ': ' + e.message)
     } finally {
       setSaving(false)
     }
@@ -179,14 +181,14 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">基</span>
+              <span className="text-white text-sm font-bold">{t('settings.basicIcon')}</span>
             </div>
-            基础设置
+            {t('settings.basic')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="port">服务器端口</Label>
+            <Label htmlFor="port">{t('settings.serverPort')}</Label>
             <Input
               id="port"
               type="number"
@@ -194,14 +196,14 @@ export default function SettingsPanel({ password }) {
               value={settings.port}
               onChange={(e) => setSettings({ ...settings, port: parseInt(e.target.value) })}
             />
-            <p className="text-xs text-muted-foreground mt-1">修改后需要重启服务器</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('settings.restartRequired')}</p>
           </div>
           <div>
-            <Label htmlFor="password">管理员密码</Label>
+            <Label htmlFor="password">{t('settings.password')}</Label>
             <Input
               id="password"
               type="password"
-              placeholder={settings.password === '********' ? '留空保持不变，输入新密码修改' : '设置管理员密码'}
+              placeholder={settings.password === '********' ? t('settings.passwordPlaceholder') : t('settings.passwordPlaceholderNew')}
               value={settings.password === '********' ? '' : settings.password}
               onChange={(e) => setSettings({ ...settings, password: e.target.value })}
               onFocus={(e) => {
@@ -212,7 +214,7 @@ export default function SettingsPanel({ password }) {
               }}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {settings.password === '********' ? '当前已设置密码，留空保持不变' : '留空表示不修改'}
+              {settings.password === '********' ? t('settings.passwordCurrentSet') : t('settings.passwordNoChange')}
             </p>
           </div>
         </CardContent>
@@ -223,14 +225,14 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">代</span>
+              <span className="text-white text-sm font-bold">{t('settings.proxyIcon')}</span>
             </div>
-            代理设置
+            {t('settings.proxy')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div>
-            <Label htmlFor="proxyURL">全局代理URL</Label>
+            <Label htmlFor="proxyURL">{t('settings.globalProxyUrl')}</Label>
             <Input
               id="proxyURL"
               type="text"
@@ -239,7 +241,7 @@ export default function SettingsPanel({ password }) {
               onChange={(e) => setSettings({ ...settings, proxyURL: e.target.value })}
               className="border-2 focus:border-green-500 dark:focus:border-green-400"
             />
-            <p className="text-xs text-muted-foreground mt-1">为所有账户设置全局代理</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('settings.globalProxyHelp')}</p>
           </div>
         </CardContent>
       </Card>
@@ -249,14 +251,14 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">T</span>
+              <span className="text-white text-sm font-bold">{t('settings.thinkingIcon')}</span>
             </div>
-            Thinking 配置
+            {t('settings.thinking')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="thinkingSuffix">Thinking 后缀</Label>
+            <Label htmlFor="thinkingSuffix">{t('settings.thinkingSuffix')}</Label>
             <Input
               id="thinkingSuffix"
               type="text"
@@ -265,19 +267,19 @@ export default function SettingsPanel({ password }) {
               onChange={(e) => setThinking({ ...thinking, suffix: e.target.value })}
               className="border-2 focus:border-purple-500 dark:focus:border-purple-400"
             />
-            <p className="text-xs text-muted-foreground mt-1">添加到模型名称的后缀以启用thinking</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('settings.thinkingSuffixHelp')}</p>
           </div>
           <div>
-            <Label htmlFor="openaiFormat">OpenAI 格式</Label>
+            <Label htmlFor="openaiFormat">{t('settings.openaiFormat')}</Label>
             <Select
               value={thinking.openaiFormat}
               onValueChange={(value) => setThinking({ ...thinking, openaiFormat: value })}
             >
               <SelectTrigger id="openaiFormat">
-                <SelectValue placeholder="无" />
+                <SelectValue placeholder={t('settings.none')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">无</SelectItem>
+                <SelectItem value="none">{t('settings.none')}</SelectItem>
                 <SelectItem value="reasoning_content">reasoning_content</SelectItem>
                 <SelectItem value="thinking">thinking</SelectItem>
                 <SelectItem value="think">think</SelectItem>
@@ -285,16 +287,16 @@ export default function SettingsPanel({ password }) {
             </Select>
           </div>
           <div>
-            <Label htmlFor="claudeFormat">Claude 格式</Label>
+            <Label htmlFor="claudeFormat">{t('settings.claudeFormat')}</Label>
             <Select
               value={thinking.claudeFormat}
               onValueChange={(value) => setThinking({ ...thinking, claudeFormat: value })}
             >
               <SelectTrigger id="claudeFormat">
-                <SelectValue placeholder="无" />
+                <SelectValue placeholder={t('settings.none')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">无</SelectItem>
+                <SelectItem value="none">{t('settings.none')}</SelectItem>
                 <SelectItem value="reasoning_content">reasoning_content</SelectItem>
                 <SelectItem value="thinking">thinking</SelectItem>
                 <SelectItem value="think">think</SelectItem>
@@ -309,23 +311,23 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-orange-600 to-red-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">端</span>
+              <span className="text-white text-sm font-bold">{t('settings.endpointIcon')}</span>
             </div>
-            端点设置
+            {t('settings.endpoint')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="preferredEndpoint">首选端点</Label>
+            <Label htmlFor="preferredEndpoint">{t('settings.preferredEndpoint')}</Label>
             <Select
               value={endpoint.preferred}
               onValueChange={(value) => setEndpoint({ ...endpoint, preferred: value })}
             >
               <SelectTrigger id="preferredEndpoint">
-                <SelectValue placeholder="自动" />
+                <SelectValue placeholder={t('settings.auto')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto">自动</SelectItem>
+                <SelectItem value="auto">{t('settings.auto')}</SelectItem>
                 <SelectItem value="kiro">Kiro</SelectItem>
                 <SelectItem value="codewhisperer">CodeWhisperer</SelectItem>
                 <SelectItem value="amazonq">Amazon Q</SelectItem>
@@ -338,9 +340,9 @@ export default function SettingsPanel({ password }) {
               checked={endpoint.enableFallback}
               onCheckedChange={(checked) => setEndpoint({ ...endpoint, enableFallback: checked })}
             />
-            <Label htmlFor="enableFallback" className="cursor-pointer">启用回退</Label>
+            <Label htmlFor="enableFallback" className="cursor-pointer">{t('settings.enableFallback')}</Label>
           </div>
-          <p className="text-xs text-muted-foreground">当首选端点失败时自动尝试其他端点</p>
+          <p className="text-xs text-muted-foreground">{t('settings.fallbackHelp')}</p>
         </CardContent>
       </Card>
 
@@ -349,9 +351,9 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">过</span>
+              <span className="text-white text-sm font-bold">{t('settings.filterIcon')}</span>
             </div>
-            Prompt 过滤
+            {t('settings.promptFilter')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -362,9 +364,9 @@ export default function SettingsPanel({ password }) {
                 checked={promptFilter.filterClaudeCode}
                 onCheckedChange={(checked) => setPromptFilter({ ...promptFilter, filterClaudeCode: checked })}
               />
-              <Label htmlFor="filterClaudeCode" className="cursor-pointer">过滤 Claude Code</Label>
+              <Label htmlFor="filterClaudeCode" className="cursor-pointer">{t('settings.filterClaudeCode')}</Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-8">移除 Claude Code 特定的提示内容</p>
+            <p className="text-xs text-muted-foreground ml-8">{t('settings.filterClaudeCodeHelp')}</p>
 
             <div className="flex items-center space-x-2">
               <Switch
@@ -372,9 +374,9 @@ export default function SettingsPanel({ password }) {
                 checked={promptFilter.filterEnvNoise}
                 onCheckedChange={(checked) => setPromptFilter({ ...promptFilter, filterEnvNoise: checked })}
               />
-              <Label htmlFor="filterEnvNoise" className="cursor-pointer">过滤环境噪音</Label>
+              <Label htmlFor="filterEnvNoise" className="cursor-pointer">{t('settings.filterEnvNoise')}</Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-8">移除环境变量和系统信息</p>
+            <p className="text-xs text-muted-foreground ml-8">{t('settings.filterEnvNoiseHelp')}</p>
 
             <div className="flex items-center space-x-2">
               <Switch
@@ -382,9 +384,9 @@ export default function SettingsPanel({ password }) {
                 checked={promptFilter.filterStripBoundaries}
                 onCheckedChange={(checked) => setPromptFilter({ ...promptFilter, filterStripBoundaries: checked })}
               />
-              <Label htmlFor="filterStripBoundaries" className="cursor-pointer">过滤边界标记</Label>
+              <Label htmlFor="filterStripBoundaries" className="cursor-pointer">{t('settings.filterBoundaries')}</Label>
             </div>
-            <p className="text-xs text-muted-foreground ml-8">移除XML边界标记</p>
+            <p className="text-xs text-muted-foreground ml-8">{t('settings.filterBoundariesHelp')}</p>
           </div>
         </CardContent>
       </Card>
@@ -394,18 +396,18 @@ export default function SettingsPanel({ password }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-sm font-bold">规</span>
+              <span className="text-white text-sm font-bold">{t('settings.rulesIcon')}</span>
             </div>
-            自定义过滤规则
+            {t('settings.customRules')}
           </CardTitle>
-          <CardDescription>添加自定义的正则表达式或文本匹配规则</CardDescription>
+          <CardDescription>{t('settings.customRulesDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {promptFilter.rules.map((rule, idx) => (
             <Card key={idx} className="border-2 border-border/50 glass">
               <CardContent className="pt-6 space-y-4">
                 <div>
-                  <Label>规则类型</Label>
+                  <Label>{t('settings.ruleType')}</Label>
                   <Select
                     value={rule.type}
                     onValueChange={(value) => updateRule(idx, 'type', value)}
@@ -414,16 +416,16 @@ export default function SettingsPanel({ password }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="regex">正则表达式</SelectItem>
-                      <SelectItem value="lines-containing">包含文本的行</SelectItem>
+                      <SelectItem value="regex">{t('settings.regex')}</SelectItem>
+                      <SelectItem value="lines-containing">{t('settings.linesContaining')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>匹配模式</Label>
+                  <Label>{t('settings.matchPattern')}</Label>
                   <Input
                     type="text"
-                    placeholder={rule.type === 'regex' ? '正则表达式' : '要匹配的文本'}
+                    placeholder={rule.type === 'regex' ? t('settings.regexPattern') : t('settings.textToMatch')}
                     value={rule.match}
                     onChange={(e) => updateRule(idx, 'match', e.target.value)}
                     className="border-2 focus:border-pink-500 dark:focus:border-pink-400"
@@ -431,10 +433,10 @@ export default function SettingsPanel({ password }) {
                 </div>
                 {rule.type === 'regex' && (
                   <div>
-                    <Label>替换为</Label>
+                    <Label>{t('settings.replaceWith')}</Label>
                     <Input
                       type="text"
-                      placeholder="替换内容（留空表示删除）"
+                      placeholder={t('settings.replacementContent')}
                       value={rule.replace || ''}
                       onChange={(e) => updateRule(idx, 'replace', e.target.value)}
                       className="border-2 focus:border-pink-500 dark:focus:border-pink-400"
@@ -448,37 +450,37 @@ export default function SettingsPanel({ password }) {
                   className="shadow-sm hover:shadow-md"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  删除规则
+                  {t('settings.deleteRule')}
                 </Button>
               </CardContent>
             </Card>
           ))}
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={addRule}
             className="border-2 border-border hover:border-pink-500 dark:hover:border-pink-400"
           >
             <Plus className="w-4 h-4 mr-2" />
-            添加规则
+            {t('settings.addRule')}
           </Button>
         </CardContent>
       </Card>
 
       {/* 保存按钮 */}
       <div className="flex gap-3 justify-end">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={loadSettings}
           className="border-2 border-border"
         >
-          重置
+          {t('settings.reset')}
         </Button>
-        <Button 
-          onClick={saveSettings} 
+        <Button
+          onClick={saveSettings}
           disabled={saving}
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md hover:shadow-lg transition-all"
         >
-          {saving ? '保存中...' : '保存设置'}
+          {saving ? t('settings.saving') : t('settings.save')}
         </Button>
       </div>
     </div>

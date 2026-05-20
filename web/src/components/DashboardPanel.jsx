@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react'
 
 export default function DashboardPanel({ password, accounts, apiKeys }) {
+  const { t, i18n } = useTranslation()
   const [stats, setStats] = useState({
     totalRequests: 0,
     successRequests: 0,
@@ -102,7 +104,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '-'
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    return new Date(timestamp).toLocaleString(i18n.language, {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -119,15 +121,15 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">账户总数</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('dashboard.accounts')}</p>
                 <p className="text-3xl font-bold">{accounts.length}</p>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                    {enabledAccounts} 启用
+                    {enabledAccounts} {t('accounts.enabled')}
                   </Badge>
                   <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-950/30 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700">
-                    {disabledAccounts} 禁用
+                    {disabledAccounts} {t('common.disabled')}
                   </Badge>
                 </div>
               </div>
@@ -143,12 +145,12 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">API Keys</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('dashboard.apiKeys')}</p>
                 <p className="text-3xl font-bold">{apiKeys.length}</p>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
                     <Zap className="w-3 h-3 mr-1" />
-                    {enabledKeys} 活跃
+                    {enabledKeys} {t('apiKeys.enabled')}
                   </Badge>
                 </div>
               </div>
@@ -164,11 +166,11 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">总请求数</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('dashboard.requests')}</p>
                 <p className="text-3xl font-bold">{formatNumber(stats.totalRequests)}</p>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
-                    {successRate}% 成功
+                    {successRate}% {t('dashboard.success')}
                   </Badge>
                 </div>
               </div>
@@ -184,7 +186,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Token 使用</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('dashboard.tokens')}</p>
                 <p className="text-3xl font-bold">{formatNumber(stats.totalInputTokens + stats.totalOutputTokens)}</p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
@@ -224,7 +226,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Globe className="w-5 h-5" />
-              账户状态
+              {t('dashboard.accountStatus')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -232,21 +234,21 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm font-medium">在线</span>
+                  <span className="text-sm font-medium">{t('dashboard.online')}</span>
                 </div>
                 <span className="text-lg font-bold text-green-600 dark:text-green-400">{onlineAccounts}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                  <span className="text-sm font-medium">离线</span>
+                  <span className="text-sm font-medium">{t('dashboard.offline')}</span>
                 </div>
                 <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{accounts.length - onlineAccounts}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium">启用率</span>
+                  <span className="text-sm font-medium">{t('dashboard.enabledRate')}</span>
                 </div>
                 <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                   {accounts.length > 0 ? ((enabledAccounts / accounts.length) * 100).toFixed(0) : 0}%
@@ -261,7 +263,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="w-5 h-5" />
-              请求统计
+              {t('dashboard.requestStats')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -269,21 +271,21 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-medium">成功</span>
+                  <span className="text-sm font-medium">{t('dashboard.success')}</span>
                 </div>
                 <span className="text-lg font-bold text-green-600 dark:text-green-400">{stats.successRequests}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
                 <div className="flex items-center gap-2">
                   <XCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-medium">失败</span>
+                  <span className="text-sm font-medium">{t('dashboard.failed')}</span>
                 </div>
                 <span className="text-lg font-bold text-red-600 dark:text-red-400">{stats.failedRequests}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium">成功率</span>
+                  <span className="text-sm font-medium">{t('dashboard.successRate')}</span>
                 </div>
                 <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{successRate}%</span>
               </div>
@@ -298,7 +300,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
           <CardTitle className="text-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              最近活动
+              {t('dashboard.recentActivity')}
             </div>
             <Button
               variant="ghost"
@@ -313,7 +315,7 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
         </CardHeader>
         <CardContent>
           {stats.recentLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">暂无活动记录</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{t('dashboard.noActivity')}</p>
           ) : (
             <div className="space-y-3">
               {stats.recentLogs.map((log, idx) => (
@@ -439,8 +441,8 @@ export default function DashboardPanel({ password, accounts, apiKeys }) {
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">系统版本</p>
-                <p className="text-lg font-semibold">{version || 'Loading...'}</p>
+                <p className="text-sm text-muted-foreground">{t('dashboard.systemVersion')}</p>
+                <p className="text-lg font-semibold">{version || t('common.loading')}</p>
               </div>
             </div>
             <Badge variant="outline" className="text-xs">

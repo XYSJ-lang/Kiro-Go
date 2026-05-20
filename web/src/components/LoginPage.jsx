@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { LogIn, Loader2, Sparkles } from 'lucide-react'
 
 export default function LoginPage({ onLogin }) {
+  const { t } = useTranslation()
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -39,7 +41,7 @@ export default function LoginPage({ onLogin }) {
               Kiro-Go
             </CardTitle>
             <CardDescription className="text-base text-muted-foreground">
-              管理面板登录
+              {t('login.title')}
             </CardDescription>
           </div>
         </CardHeader>
@@ -48,7 +50,7 @@ export default function LoginPage({ onLogin }) {
             <div className="space-y-2">
               <Input
                 type="password"
-                placeholder="请输入管理员密码"
+                placeholder={t('login.placeholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -64,12 +66,12 @@ export default function LoginPage({ onLogin }) {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  登录中...
+                  {t('common.loading')}
                 </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5 mr-2" />
-                  登录
+                  {t('login.button')}
                 </>
               )}
             </Button>

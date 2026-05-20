@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Toaster } from './components/ui/sonner'
 import { toast } from 'sonner'
 import { ThemeProvider, useTheme } from './components/ThemeProvider'
@@ -23,9 +24,10 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
 } from './components/ui/navigation-menu'
-import { LogOut } from 'lucide-react'
+import { LogOut, Languages } from 'lucide-react'
 
 function AppContent() {
+  const { t, i18n } = useTranslation()
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [activeTab, setActiveTab] = useState(() => {
@@ -44,6 +46,12 @@ function AppContent() {
   const [selectedAccounts, setSelectedAccounts] = useState([])
   const searchInputRef = useRef(null)
   const { setTheme } = useTheme()
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'zh' ? 'en' : 'zh'
+    i18n.changeLanguage(newLang)
+    localStorage.setItem('language', newLang)
+  }
 
   // 确认对话框状态
   const [confirmDialog, setConfirmDialog] = useState({
@@ -94,10 +102,10 @@ function AppContent() {
         loadAccounts(pwd)
         loadApiKeys(pwd)
       } else {
-        toast.error('密码错误')
+        toast.error(t('messages.loginError'))
       }
     } catch (e) {
-      toast.error('登录失败')
+      toast.error(t('messages.loginFailed'))
     }
   }
 
@@ -113,7 +121,7 @@ function AppContent() {
       }
     } catch (e) {
       console.error('Failed to load accounts:', e)
-      toast.error('加载账户失败')
+      toast.error(t('messages.loadAccountsError'))
     } finally {
       setLoading(false)
     }
@@ -165,20 +173,20 @@ function AppContent() {
         body: JSON.stringify({ enabled: !enabled })
       })
       if (res.ok) {
-        toast.success('操作成功')
+        toast.success(t('messages.operationSuccess'))
       } else {
         // 失败时回滚
         setAccounts(prev => prev.map(acc =>
           acc.id === id ? { ...acc, enabled: enabled } : acc
         ))
-        toast.error('操作失败')
+        toast.error(t('messages.operationFailed'))
       }
     } catch (e) {
       // 失败时回滚
       setAccounts(prev => prev.map(acc =>
         acc.id === id ? { ...acc, enabled: enabled } : acc
       ))
-      toast.error('操作失败')
+      toast.error(t('messages.operationFailed'))
     }
   }
 
@@ -195,23 +203,23 @@ function AppContent() {
           setAccounts(prev => prev.map(acc =>
             acc.id === id ? data.account : acc
           ))
-          toast.success('刷新成功')
+          toast.success(t('messages.refreshSuccess'))
         } else {
-          toast.success('刷新成功')
+          toast.success(t('messages.refreshSuccess'))
         }
       } else {
-        toast.error('刷新失败')
+        toast.error(t('messages.refreshFailed'))
       }
     } catch (e) {
-      toast.error('刷新失败')
+      toast.error(t('messages.refreshFailed'))
     }
   }
 
   const deleteAccount = async (id) => {
     setConfirmDialog({
       open: true,
-      title: '确认删除',
-      description: '确定要删除此账户吗？此操作无法撤销。',
+      title: t('confirm.deleteAccount.title'),
+      description: t('confirm.deleteAccount.description'),
       variant: 'destructive',
       onConfirm: async () => {
         try {
@@ -222,12 +230,12 @@ function AppContent() {
           if (res.ok) {
             // 从列表中移除
             setAccounts(prev => prev.filter(acc => acc.id !== id))
-            toast.success('删除成功')
+            toast.success(t('messages.deleteSuccess'))
           } else {
-            toast.error('删除失败')
+            toast.error(t('messages.deleteFailed'))
           }
         } catch (e) {
-          toast.error('删除失败')
+          toast.error(t('messages.deleteFailed'))
         }
         setConfirmDialog({ ...confirmDialog, open: false })
       }
@@ -253,11 +261,11 @@ function AppContent() {
           })
         )
       )
-      toast.success(`已启用 ${ids.length} 个账户`)
+      toast.success(t('messages.batchEnabled', { count: ids.length }))
     } catch (e) {
       // 失败时重新加载
       loadAccounts()
-      toast.error('批量启用失败')
+      toast.error(t('messages.batchEnableFailed'))
     }
   }
 
@@ -280,19 +288,19 @@ function AppContent() {
           })
         )
       )
-      toast.success(`已禁用 ${ids.length} 个账户`)
+      toast.success(t('messages.batchDisabled', { count: ids.length }))
     } catch (e) {
       // 失败时重新加载
       loadAccounts()
-      toast.error('批量禁用失败')
+      toast.error(t('messages.batchDisableFailed'))
     }
   }
 
   const handleBatchDelete = async (ids) => {
     setConfirmDialog({
       open: true,
-      title: '确认批量删除',
-      description: `确定要删除选中的 ${ids.length} 个账户吗？此操作无法撤销。`,
+      title: t('confirm.batchDelete.title'),
+      description: t('confirm.batchDelete.description', { count: ids.length }),
       variant: 'destructive',
       onConfirm: async () => {
         try {
@@ -307,9 +315,9 @@ function AppContent() {
           // 从列表中移除
           setAccounts(prev => prev.filter(acc => !ids.includes(acc.id)))
           setSelectedAccounts([])
-          toast.success(`已删除 ${ids.length} 个账户`)
+          toast.success(t('messages.batchDeleted', { count: ids.length }))
         } catch (e) {
-          toast.error('批量删除失败')
+          toast.error(t('messages.batchDeleteFailed'))
         }
         setConfirmDialog({ ...confirmDialog, open: false })
       }
@@ -333,7 +341,7 @@ function AppContent() {
     a.download = `accounts-${new Date().toISOString().split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success('导出成功')
+    toast.success(t('messages.exportSuccess'))
   }
 
   const handleExportCSV = () => {
@@ -359,7 +367,7 @@ function AppContent() {
     a.download = `accounts-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success('导出成功')
+    toast.success(t('messages.exportSuccess'))
   }
 
   const showDetail = async (id) => {
@@ -372,10 +380,10 @@ function AppContent() {
         setAccountDetail(data)
         setDetailOpen(true)
       } else {
-        toast.error('加载详情失败')
+        toast.error(t('messages.loadDetailError'))
       }
     } catch (e) {
-      toast.error('加载详情失败')
+      toast.error(t('messages.loadDetailError'))
     }
   }
 
@@ -383,8 +391,8 @@ function AppContent() {
   const deleteApiKey = async (id) => {
     setConfirmDialog({
       open: true,
-      title: '确认删除',
-      description: '确定要删除此API密钥吗？此操作无法撤销。',
+      title: t('confirm.deleteApiKey.title'),
+      description: t('confirm.deleteApiKey.description'),
       variant: 'destructive',
       onConfirm: async () => {
         try {
@@ -395,12 +403,12 @@ function AppContent() {
           if (res.ok) {
             // 从列表中移除
             setApiKeys(prev => prev.filter(key => key.id !== id))
-            toast.success('删除成功')
+            toast.success(t('messages.deleteSuccess'))
           } else {
-            toast.error('删除失败')
+            toast.error(t('messages.deleteFailed'))
           }
         } catch (e) {
-          toast.error('删除失败')
+          toast.error(t('messages.deleteFailed'))
         }
         setConfirmDialog({ ...confirmDialog, open: false })
       }
@@ -423,20 +431,20 @@ function AppContent() {
         body: JSON.stringify({ enabled: !currentEnabled })
       })
       if (res.ok) {
-        toast.success(currentEnabled ? '已禁用' : '已启用')
+        toast.success(currentEnabled ? t('messages.apiKeyDisabled') : t('messages.apiKeyEnabled'))
       } else {
         // 失败时回滚
         setApiKeys(prev => prev.map(key =>
           key.id === id ? { ...key, enabled: currentEnabled } : key
         ))
-        toast.error('操作失败')
+        toast.error(t('messages.operationFailed'))
       }
     } catch (e) {
       // 失败时回滚
       setApiKeys(prev => prev.map(key =>
         key.id === id ? { ...key, enabled: currentEnabled } : key
       ))
-      toast.error('操作失败')
+      toast.error(t('messages.operationFailed'))
     }
   }
 
@@ -452,17 +460,17 @@ function AppContent() {
         setApiKeys(prev => prev.map(key =>
           key.id === id ? { ...key, key: data.key } : key
         ))
-        toast.success('刷新成功')
+        toast.success(t('messages.refreshSuccess'))
       } else {
-        toast.error('刷新失败')
+        toast.error(t('messages.refreshFailed'))
       }
     } catch (e) {
-      toast.error('刷新失败')
+      toast.error(t('messages.refreshFailed'))
     }
   }
 
   const testApiKey = async (id) => {
-    toast.info('正在测试连接...')
+    toast.info(t('messages.testing'))
     try {
       const res = await fetch(`/admin/api/keys/${id}/test`, {
         method: 'POST',
@@ -470,12 +478,12 @@ function AppContent() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        toast.success(`测试成功 - 响应时间: ${data.responseTime}ms`)
+        toast.success(t('messages.testSuccess', { time: data.responseTime }))
       } else {
-        toast.error('测试失败: ' + (data.error || '未知错误'))
+        toast.error(t('messages.testFailedWithError', { error: data.error || t('messages.unknownError') }))
       }
     } catch (e) {
-      toast.error('测试失败')
+      toast.error(t('messages.testFailed'))
     }
   }
 
@@ -518,7 +526,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  仪表板
+                  {t('nav.dashboard')}
                 </button>
                 <button
                   onClick={() => {
@@ -531,7 +539,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  账户管理
+                  {t('nav.accounts')}
                 </button>
                 <button
                   onClick={() => {
@@ -544,7 +552,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  API密钥
+                  {t('nav.apiKeys')}
                 </button>
                 <button
                   onClick={() => {
@@ -557,7 +565,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  请求日志
+                  {t('nav.logs')}
                 </button>
                 <button
                   onClick={() => {
@@ -570,7 +578,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  审计日志
+                  {t('nav.auditLogs')}
                 </button>
                 <button
                   onClick={() => {
@@ -583,7 +591,7 @@ function AppContent() {
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
-                  系统设置
+                  {t('nav.settings')}
                 </button>
               </nav>
             </div>
@@ -592,11 +600,20 @@ function AppContent() {
               <ThemeToggle />
               <Button
                 variant="outline"
+                onClick={toggleLanguage}
+                className="border-2 dark:border-slate-600 dark:text-slate-200 transition-colors"
+                title={i18n.language === 'zh' ? 'Switch to English' : '切换到中文'}
+              >
+                <Languages className="w-4 h-4 mr-2" />
+                {i18n.language === 'zh' ? 'EN' : '中文'}
+              </Button>
+              <Button
+                variant="outline"
                 onClick={handleLogout}
                 className="border-2 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-400 dark:hover:border-red-500 hover:text-red-600 dark:hover:text-red-300 dark:border-slate-600 dark:text-slate-200 transition-colors"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                退出登录
+                {t('app.logout')}
               </Button>
             </div>
           </div>

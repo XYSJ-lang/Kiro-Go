@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -10,6 +11,7 @@ import {
 import { toast } from 'sonner'
 
 export default function AuditLogsPanel({ password }) {
+  const { t, i18n } = useTranslation()
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
   const [filterLevel, setFilterLevel] = useState('all')
@@ -33,17 +35,17 @@ export default function AuditLogsPanel({ password }) {
         const data = await res.json()
         setLogs(data || [])
       } else {
-        toast.error('加载审计日志失败')
+        toast.error(t('auditLogs.loadError'))
       }
     } catch (e) {
-      toast.error('加载审计日志失败')
+      toast.error(t('auditLogs.loadError'))
     } finally {
       setLoading(false)
     }
   }
 
   const clearLogs = async () => {
-    if (!confirm('确定要清空所有审计日志吗？此操作无法撤销。')) {
+    if (!confirm(t('auditLogs.clearConfirm'))) {
       return
     }
     try {
@@ -53,18 +55,19 @@ export default function AuditLogsPanel({ password }) {
       })
       if (res.ok) {
         setLogs([])
-        toast.success('审计日志已清空')
+        toast.success(t('auditLogs.clearSuccess'))
       } else {
-        toast.error('清空审计日志失败')
+        toast.error(t('auditLogs.clearError'))
       }
     } catch (e) {
-      toast.error('清空审计日志失败')
+      toast.error(t('auditLogs.clearError'))
     }
   }
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '-'
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
+    return new Date(timestamp).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -120,7 +123,7 @@ export default function AuditLogsPanel({ password }) {
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">总记录数</p>
+                <p className="text-xs text-muted-foreground">{t('auditLogs.total')}</p>
                 <p className="text-xl font-bold">{stats.total}</p>
               </div>
             </div>
@@ -134,7 +137,7 @@ export default function AuditLogsPanel({ password }) {
                 <AlertCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">错误</p>
+                <p className="text-xs text-muted-foreground">{t('auditLogs.error')}</p>
                 <p className="text-xl font-bold">{stats.error}</p>
               </div>
             </div>
@@ -148,7 +151,7 @@ export default function AuditLogsPanel({ password }) {
                 <AlertTriangle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">警告</p>
+                <p className="text-xs text-muted-foreground">{t('auditLogs.warning')}</p>
                 <p className="text-xl font-bold">{stats.warning}</p>
               </div>
             </div>
@@ -162,7 +165,7 @@ export default function AuditLogsPanel({ password }) {
                 <Info className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">信息</p>
+                <p className="text-xs text-muted-foreground">{t('auditLogs.info')}</p>
                 <p className="text-xl font-bold">{stats.info}</p>
               </div>
             </div>
@@ -181,7 +184,7 @@ export default function AuditLogsPanel({ password }) {
                 onClick={() => setFilterLevel('all')}
                 className="border-2"
               >
-                全部
+                {t('auditLogs.filters.all')}
               </Button>
               <Button
                 variant={filterLevel === 'error' ? 'default' : 'outline'}
@@ -189,7 +192,7 @@ export default function AuditLogsPanel({ password }) {
                 onClick={() => setFilterLevel('error')}
                 className="border-2"
               >
-                错误
+                {t('auditLogs.filters.error')}
               </Button>
               <Button
                 variant={filterLevel === 'warning' ? 'default' : 'outline'}
@@ -197,7 +200,7 @@ export default function AuditLogsPanel({ password }) {
                 onClick={() => setFilterLevel('warning')}
                 className="border-2"
               >
-                警告
+                {t('auditLogs.filters.warning')}
               </Button>
               <Button
                 variant={filterLevel === 'info' ? 'default' : 'outline'}
@@ -205,7 +208,7 @@ export default function AuditLogsPanel({ password }) {
                 onClick={() => setFilterLevel('info')}
                 className="border-2"
               >
-                信息
+                {t('auditLogs.filters.info')}
               </Button>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -241,7 +244,7 @@ export default function AuditLogsPanel({ password }) {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            审计日志
+            {t('auditLogs.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -252,7 +255,7 @@ export default function AuditLogsPanel({ password }) {
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-12">
               <Shield className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">暂无审计记录</p>
+              <p className="text-muted-foreground">{t('auditLogs.noLogs')}</p>
             </div>
           ) : (
             <ScrollArea className="h-[600px] pr-4">
