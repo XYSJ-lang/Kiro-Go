@@ -131,7 +131,7 @@ export default function CreateApiKeyModal({ open, onOpenChange, password, onSucc
               <p className="text-sm text-green-700 dark:text-green-300 mb-3">
                 请立即复制并保存您的 API 密钥。关闭此窗口后将无法再次查看。
               </p>
-              <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-green-300 dark:border-green-700">
+              <div className="bg-card rounded-lg p-3 border border-green-300 dark:border-green-700">
                 <p className="text-xs text-muted-foreground mb-1">API 密钥</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-sm font-mono break-all text-foreground">

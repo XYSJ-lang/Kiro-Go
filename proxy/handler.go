@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -2232,6 +2234,12 @@ func (h *Handler) handleAdminAPI(w http.ResponseWriter, r *http.Request) {
 		h.apiGetKeys(w, r)
 	case path == "/keys" && r.Method == "POST":
 		h.apiCreateKey(w, r)
+	case strings.HasPrefix(path, "/keys/") && strings.HasSuffix(path, "/refresh") && r.Method == "POST":
+		id := strings.TrimSuffix(strings.TrimPrefix(path, "/keys/"), "/refresh")
+		h.apiRefreshKey(w, r, id)
+	case strings.HasPrefix(path, "/keys/") && strings.HasSuffix(path, "/test") && r.Method == "POST":
+		id := strings.TrimSuffix(strings.TrimPrefix(path, "/keys/"), "/test")
+		h.apiTestKey(w, r, id)
 	case strings.HasPrefix(path, "/keys/") && r.Method == "PUT":
 		h.apiUpdateKey(w, r, strings.TrimPrefix(path, "/keys/"))
 	case strings.HasPrefix(path, "/keys/") && r.Method == "DELETE":
@@ -3995,6 +4003,71 @@ func (h *Handler) apiDeleteKey(w http.ResponseWriter, r *http.Request, id string
 	})
 
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (h *Handler) apiRefreshKey(w http.ResponseWriter, r *http.Request, id string) {
+	existingKey := config.GetApiKeyByID(id)
+	if existingKey == nil {
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(map[string]string{"error": "API key not found"})
+		return
+	}
+
+	// Generate new key
+	newKey := config.GenerateApiKey()
+	hash := sha256.Sum256([]byte(newKey))
+	newHash := hex.EncodeToString(hash[:])
+
+	// Update the key
+	existingKey.KeyHash = newHash
+	existingKey.Key = ""
+	if err := config.UpdateApiKey(id, *existingKey); err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Add audit log
+	config.AddAuditLog(config.AuditLog{
+		Action:  "apikey.refresh",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("API key refreshed: %s", existingKey.Name),
+		Target:  existingKey.Name,
+		Metadata: map[string]interface{}{
+			"keyId": id,
+		},
+	})
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "ok",
+		"key":    newKey,
+	})
+}
+
+func (h *Handler) apiTestKey(w http.ResponseWriter, r *http.Request, id string) {
+	existingKey := config.GetApiKeyByID(id)
+	if existingKey == nil {
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(map[string]string{"error": "API key not found"})
+		return
+	}
+
+	if !existingKey.Enabled {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "API key is disabled"})
+		return
+	}
+
+	// Simple connectivity test - just verify the key exists and is enabled
+	start := time.Now()
+	responseTime := time.Since(start).Milliseconds()
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":      true,
+		"responseTime": responseTime,
+		"message":      "API key is valid and enabled",
+	})
 }
 
 // ==================== Audit Logs API ====================

@@ -47,7 +47,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
               <User className="w-4 h-4" />
               基本信息
             </h3>
-            <div className="space-y-1 bg-muted/50 rounded-lg p-4">
+            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border border-border/50">
               <InfoItem icon={Hash} label="账户 ID" value={account.id} />
               <InfoItem icon={User} label="昵称" value={account.nickname} />
               <InfoItem icon={Mail} label="邮箱" value={account.email} />
@@ -77,7 +77,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
               <Key className="w-4 h-4" />
               认证信息
             </h3>
-            <div className="space-y-1 bg-muted/50 rounded-lg p-4">
+            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border border-border/50">
               <InfoItem icon={Shield} label="认证方式" value={account.authMethod} />
               <InfoItem icon={Server} label="提供商" value={account.provider} />
               <InfoItem icon={Globe} label="区域" value={account.region} />
@@ -128,8 +128,8 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                         </>
                       ) : (
                         <>
-                          <AlertCircle className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-500">超额计费未启用</span>
+                          <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">超额计费未启用</span>
                         </>
                       )}
                     </div>
@@ -155,10 +155,10 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                     const isCritical = percentage > 90
 
                     return (
-                      <div key={idx} className="bg-muted/50 rounded-lg p-4 space-y-3">
+                      <div key={idx} className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 space-y-3 border border-border/50">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            <div className={`w-10 h-10 rounded-md flex items-center justify-center ${
                               isCritical ? 'bg-red-100 dark:bg-red-900/30' :
                               isHigh ? 'bg-orange-100 dark:bg-orange-900/30' :
                               'bg-purple-100 dark:bg-purple-900/30'
@@ -192,7 +192,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                           </div>
                         </div>
 
-                        <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="relative h-3 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${
                               isCritical
@@ -266,7 +266,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                                     {(((usage.currentOveragesWithPrecision || usage.currentOverages) / (usage.overageCapWithPrecision || usage.overageCap)) * 100).toFixed(1)}%
                                   </span>
                                 </div>
-                                <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                                   <div
                                     className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500"
                                     style={{
@@ -344,7 +344,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                   <User className="w-4 h-4" />
                   用户信息
                 </h3>
-                <div className="space-y-1 bg-muted/50 rounded-lg p-4">
+                <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border border-border/50">
                   <div className="flex items-start gap-3 py-2">
                     <Mail className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -372,33 +372,33 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
               使用统计
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-md p-4 border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  <span className="text-sm text-muted-foreground">请求次数</span>
+                  <span className="text-sm text-green-700 dark:text-green-300">请求次数</span>
                 </div>
-                <p className="text-2xl font-bold">{account.requestCount || 0}</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{account.requestCount || 0}</p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 rounded-md p-4 border border-red-200 dark:border-red-800">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  <span className="text-sm text-muted-foreground">错误次数</span>
+                  <span className="text-sm text-red-700 dark:text-red-300">错误次数</span>
                 </div>
-                <p className="text-2xl font-bold">{account.errorCount || 0}</p>
+                <p className="text-2xl font-bold text-red-900 dark:text-red-100">{account.errorCount || 0}</p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-md p-4 border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm text-muted-foreground">最后使用</span>
+                  <span className="text-sm text-blue-700 dark:text-blue-300">最后使用</span>
                 </div>
-                <p className="text-sm font-medium">{formatDate(account.lastUsed)}</p>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">{formatDate(account.lastUsed)}</p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 rounded-md p-4 border border-purple-200 dark:border-purple-800">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm text-muted-foreground">最后刷新</span>
+                  <span className="text-sm text-purple-700 dark:text-purple-300">最后刷新</span>
                 </div>
-                <p className="text-sm font-medium">{formatDate(account.lastRefresh)}</p>
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-100">{formatDate(account.lastRefresh)}</p>
               </div>
             </div>
           </div>

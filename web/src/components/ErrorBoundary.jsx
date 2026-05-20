@@ -24,10 +24,10 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <Card className="max-w-2xl w-full">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600">
+              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <AlertCircle className="w-6 h-6" />
                 出错了
               </CardTitle>
@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component {
                 应用程序遇到了一个错误。请刷新页面重试。
               </p>
               {this.state.error && (
-                <details className="bg-gray-100 p-4 rounded-lg">
+                <details className="bg-muted p-4 rounded-lg">
                   <summary className="cursor-pointer font-medium mb-2">
                     错误详情
                   </summary>

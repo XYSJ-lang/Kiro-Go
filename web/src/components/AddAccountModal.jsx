@@ -99,10 +99,12 @@ export default function AddAccountModal({ open, onOpenChange, password, onSucces
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto glass border-0 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
+              <Upload className="w-5 h-5 text-white" />
+            </div>
             添加账户
           </DialogTitle>
           <DialogDescription>导入 Kiro 账户凭证</DialogDescription>
@@ -137,11 +139,13 @@ export default function AddAccountModal({ open, onOpenChange, password, onSucces
                 </Select>
               </div>
 
-              <Card className="border-2 border-dashed">
+              <Card className="border-2 border-dashed border-border/50 glass">
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <FileJson className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0" />
+                      <div className="w-10 h-10 rounded-md bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-md flex-shrink-0">
+                        <FileJson className="w-5 h-5 text-white" />
+                      </div>
                       <div className="flex-1">
                         <Label htmlFor="tokenJson" className="text-base">Token JSON</Label>
                         <p className="text-xs text-muted-foreground mb-2">
@@ -153,14 +157,16 @@ export default function AddAccountModal({ open, onOpenChange, password, onSucces
                           value={tokenJson}
                           onChange={(e) => setTokenJson(e.target.value)}
                           rows={6}
-                          className="font-mono text-xs"
+                          className="font-mono text-xs border-2 focus:border-blue-500 dark:focus:border-blue-400"
                         />
                       </div>
                     </div>
 
                     {provider !== 'Google' && provider !== 'Github' && (
                       <div className="flex items-start gap-3">
-                        <Key className="w-5 h-5 text-muted-foreground mt-1 flex-shrink-0" />
+                        <div className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md flex-shrink-0">
+                          <Key className="w-5 h-5 text-white" />
+                        </div>
                         <div className="flex-1">
                           <Label htmlFor="clientJson" className="text-base">Client JSON</Label>
                           <p className="text-xs text-muted-foreground mb-2">
@@ -172,7 +178,7 @@ export default function AddAccountModal({ open, onOpenChange, password, onSucces
                             value={clientJson}
                             onChange={(e) => setClientJson(e.target.value)}
                             rows={6}
-                            className="font-mono text-xs"
+                            className="font-mono text-xs border-2 focus:border-purple-500 dark:focus:border-purple-400"
                           />
                         </div>
                       </div>
@@ -183,7 +189,7 @@ export default function AddAccountModal({ open, onOpenChange, password, onSucces
 
               <Button
                 onClick={handleSubmit}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-md hover:shadow-lg transition-all"
                 disabled={loading}
               >
                 {loading ? (
