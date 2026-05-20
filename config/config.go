@@ -632,6 +632,24 @@ func UpdateSettings(host string, port int, apiKey string, requireApiKey bool, pa
 	return Save()
 }
 
+// UpdateBasicSettings updates basic server settings (host, port, password, proxy)
+// without touching API key settings
+func UpdateBasicSettings(host string, port int, password string, proxyURL string) error {
+	cfgLock.Lock()
+	defer cfgLock.Unlock()
+	if host != "" {
+		cfg.Host = host
+	}
+	if port > 0 {
+		cfg.Port = port
+	}
+	if password != "" {
+		cfg.Password = password
+	}
+	cfg.ProxyURL = proxyURL
+	return Save()
+}
+
 func UpdateStats(totalReq, successReq, failedReq, totalTokens int, totalCredits float64) error {
 	cfgLock.Lock()
 	defer cfgLock.Unlock()

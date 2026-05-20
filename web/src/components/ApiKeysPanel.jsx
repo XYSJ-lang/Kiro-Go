@@ -4,16 +4,15 @@ import { Card, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
 import { Input } from './ui/input'
 import { Switch } from './ui/switch'
-import { 
-  Plus, Trash2, Key, Clock, Activity, Loader2, Copy, 
-  RefreshCw, Edit, TestTube, ChevronDown, ChevronUp,
-  CheckCircle2, XCircle, AlertCircle, Zap, TrendingUp
+import {
+  Plus, Trash2, Key, Clock, Activity, Loader2, Copy,
+  RefreshCw, Edit, TestTube,
+  CheckCircle2, XCircle, Zap
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onRefresh, onToggle, onEdit, onTest }) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [expandedKeys, setExpandedKeys] = useState(new Set())
 
   const formatDate = (timestamp) => {
     if (!timestamp) return '从未'
@@ -29,16 +28,6 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
     navigator.clipboard.writeText(id)
       .then(() => toast.success('已复制密钥 ID'))
       .catch(() => toast.error('复制失败'))
-  }
-
-  const toggleExpand = (id) => {
-    const newExpanded = new Set(expandedKeys)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
-    } else {
-      newExpanded.add(id)
-    }
-    setExpandedKeys(newExpanded)
   }
 
   const filteredKeys = apiKeys.filter(key => 
@@ -147,7 +136,6 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
       ) : (
         <div className="space-y-3">
           {filteredKeys.map((key, index) => {
-            const isExpanded = expandedKeys.has(key.id)
             const isEnabled = key.enabled !== false
             
             return (
@@ -219,19 +207,6 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:bg-purple-100 dark:hover:bg-purple-900/30"
-                        onClick={() => toggleExpand(key.id)}
-                        title="展开详情"
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
                         className="h-8 w-8 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                         onClick={() => onEdit && onEdit(key)}
                         title="编辑"
@@ -267,76 +242,6 @@ export default function ApiKeysPanel({ apiKeys, loading, onCreate, onDelete, onR
                       </Button>
                     </div>
                   </div>
-
-                  {/* 展开的详细信息 */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-border space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                      {/* 时间信息 */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            <span className="text-xs text-muted-foreground">创建时间</span>
-                          </div>
-                          <p className="text-sm font-semibold">{formatDate(key.createdAt)}</p>
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Activity className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                            <span className="text-xs text-muted-foreground">最后使用</span>
-                          </div>
-                          <p className="text-sm font-semibold">{formatDate(key.lastUsed)}</p>
-                        </div>
-                      </div>
-
-                      {/* 配置信息 */}
-                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">启用状态</span>
-                          <Switch 
-                            checked={isEnabled} 
-                            onCheckedChange={() => onToggle && onToggle(key.id, isEnabled)}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">优先级</span>
-                          <Badge variant="outline" className="text-xs">
-                            {key.priority || 0}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">权重</span>
-                          <Badge variant="outline" className="text-xs">
-                            {key.weight || 1}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* 统计信息 */}
-                      {key.stats && (
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-lg p-2 border border-green-200 dark:border-green-800">
-                            <p className="text-xs text-green-700 dark:text-green-300 mb-1">成功</p>
-                            <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                              {key.stats.success || 0}
-                            </p>
-                          </div>
-                          <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/30 dark:to-red-900/30 rounded-lg p-2 border border-red-200 dark:border-red-800">
-                            <p className="text-xs text-red-700 dark:text-red-300 mb-1">失败</p>
-                            <p className="text-lg font-bold text-red-900 dark:text-red-100">
-                              {key.stats.failed || 0}
-                            </p>
-                          </div>
-                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/30 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
-                            <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">响应</p>
-                            <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                              {key.stats.avgResponseTime || '-'}ms
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )

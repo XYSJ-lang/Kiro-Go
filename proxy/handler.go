@@ -3124,8 +3124,6 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Host           string `json:"host"`
 		Port           int    `json:"port"`
-		ApiKey         string `json:"apiKey"`
-		RequireApiKey  bool   `json:"apiKeyRequired"`
 		Password       string `json:"password"`
 		ProxyURL       string `json:"proxyURL"`
 		AllowOverUsage *bool  `json:"allowOverUsage,omitempty"`
@@ -3136,7 +3134,7 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.UpdateSettings(req.Host, req.Port, req.ApiKey, req.RequireApiKey, req.Password, req.ProxyURL); err != nil {
+	if err := config.UpdateBasicSettings(req.Host, req.Port, req.Password, req.ProxyURL); err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
@@ -3158,7 +3156,8 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		User:    "admin",
 		Message: "Settings updated",
 		Metadata: map[string]interface{}{
-			"requireApiKey":  req.RequireApiKey,
+			"host":           req.Host,
+			"port":           req.Port,
 			"allowOverUsage": req.AllowOverUsage,
 		},
 	})

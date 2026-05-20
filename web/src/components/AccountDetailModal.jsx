@@ -28,15 +28,15 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] glass border-0 shadow-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] glass border-2 border-border shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-md">
               <User className="w-5 h-5 text-white" />
             </div>
             账户详情
           </DialogTitle>
-          <DialogDescription className="text-base">{account.email}</DialogDescription>
+          <DialogDescription className="text-base text-muted-foreground">{account.email}</DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
@@ -47,7 +47,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
               <User className="w-4 h-4" />
               基本信息
             </h3>
-            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border border-border/50">
+            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border-2 border-border">
               <InfoItem icon={Hash} label="账户 ID" value={account.id} />
               <InfoItem icon={User} label="昵称" value={account.nickname} />
               <InfoItem icon={Mail} label="邮箱" value={account.email} />
@@ -57,11 +57,11 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-muted-foreground">状态</p>
                   <div className="flex gap-2 mt-1">
-                    <Badge variant={account.enabled ? 'default' : 'secondary'}>
+                    <Badge variant={account.enabled ? 'default' : 'secondary'} className="border-2">
                       {account.enabled ? '已启用' : '已禁用'}
                     </Badge>
                     {account.usageData?.subscriptionInfo?.type && (
-                      <Badge variant="outline">{account.usageData.subscriptionInfo.type}</Badge>
+                      <Badge variant="outline" className="border-2">{account.usageData.subscriptionInfo.type}</Badge>
                     )}
                   </div>
                 </div>
@@ -77,7 +77,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
               <Key className="w-4 h-4" />
               认证信息
             </h3>
-            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border border-border/50">
+            <div className="space-y-1 bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 border-2 border-border">
               <InfoItem icon={Shield} label="认证方式" value={account.authMethod} />
               <InfoItem icon={Server} label="提供商" value={account.provider} />
               <InfoItem icon={Globe} label="区域" value={account.region} />
@@ -96,7 +96,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                   <Zap className="w-4 h-4" />
                   订阅信息
                 </h3>
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-4 border-2 border-purple-200 dark:border-purple-800">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-md p-4 border-2 border-purple-200 dark:border-purple-700">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-lg font-bold text-gradient">
@@ -108,12 +108,12 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                     </div>
                     <div className="flex gap-2">
                       {account.usageData.subscriptionInfo.upgradeCapability === 'UPGRADE_CAPABLE' && (
-                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700">
+                        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-2 border-green-300 dark:border-green-700">
                           可升级
                         </Badge>
                       )}
                       {account.usageData.subscriptionInfo.overageCapability === 'OVERAGE_CAPABLE' && (
-                        <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                        <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-300 dark:border-blue-700">
                           支持超额
                         </Badge>
                       )}
@@ -155,10 +155,10 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                     const isCritical = percentage > 90
 
                     return (
-                      <div key={idx} className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 space-y-3 border border-border/50">
+                      <div key={idx} className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-md p-4 space-y-3 border-2 border-border">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-md flex items-center justify-center ${
+                            <div className={`w-10 h-10 rounded-md flex items-center justify-center shadow-sm ${
                               isCritical ? 'bg-red-100 dark:bg-red-900/30' :
                               isHigh ? 'bg-orange-100 dark:bg-orange-900/30' :
                               'bg-purple-100 dark:bg-purple-900/30'
@@ -170,7 +170,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                               }`} />
                             </div>
                             <div>
-                              <p className="font-semibold">
+                              <p className="font-semibold text-foreground">
                                 {usage.displayName || usage.resourceType}
                               </p>
                               <p className="text-xs text-muted-foreground">
@@ -192,7 +192,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                           </div>
                         </div>
 
-                        <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                        <div className="relative h-3 bg-muted rounded-full overflow-hidden border border-border">
                           <div
                             className={`h-full transition-all duration-300 ${
                               isCritical
@@ -210,7 +210,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                             <Clock className="w-4 h-4 text-muted-foreground" />
                             <div>
                               <p className="text-xs text-muted-foreground">重置时间</p>
-                              <p className="font-medium">
+                              <p className="font-medium text-foreground">
                                 {usage.nextDateReset ? new Date(usage.nextDateReset * 1000).toLocaleDateString('zh-CN') : '-'}
                               </p>
                             </div>
@@ -220,7 +220,7 @@ export default function AccountDetailModal({ open, onOpenChange, account }) {
                               <DollarSign className="w-4 h-4 text-muted-foreground" />
                               <div>
                                 <p className="text-xs text-muted-foreground">货币</p>
-                                <p className="font-medium">{usage.currency}</p>
+                                <p className="font-medium text-foreground">{usage.currency}</p>
                               </div>
                             </div>
                           )}

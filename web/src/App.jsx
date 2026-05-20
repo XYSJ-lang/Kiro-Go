@@ -538,7 +538,7 @@ function AppContent() {
               <Button
                 variant="outline"
                 onClick={handleLogout}
-                className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                className="border-2 hover:bg-red-50 dark:hover:bg-red-900/30 hover:border-red-400 dark:hover:border-red-500 hover:text-red-600 dark:hover:text-red-300 dark:border-slate-600 dark:text-slate-200 transition-colors"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 退出登录
