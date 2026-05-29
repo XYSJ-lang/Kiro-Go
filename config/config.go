@@ -641,11 +641,66 @@ func GetEnabledAccounts() []Account {
 	return accounts
 }
 
-func AddAccount(account Account) error {
+// AddAccount adds a new account, or refreshes an existing one in place when an
+// account with the same server-assigned UserId already exists. On a match it
+// updates the credentials/connection fields from the incoming account while
+// preserving the stored account's ID, MachineId, runtime statistics and
+// load-balancing settings, so re-importing a token acts as a refresh instead of
+// creating a duplicate. Accounts with an empty UserId are always appended, since
+// UserId is assigned by the Kiro API and can't be matched until user info has
+// been fetched.
+//
+// It returns the account as actually stored (existing ID on a refresh, or the
+// incoming account on an insert) so callers report the correct identifier.
+func AddAccount(account Account) (Account, error) {
 	cfgLock.Lock()
 	defer cfgLock.Unlock()
+
+	if account.UserId != "" {
+		for i, a := range cfg.Accounts {
+			if a.UserId == account.UserId {
+				existing := cfg.Accounts[i]
+				// Refresh credentials and connection settings.
+				existing.AccessToken = account.AccessToken
+				existing.RefreshToken = account.RefreshToken
+				existing.ClientID = account.ClientID
+				existing.ClientSecret = account.ClientSecret
+				existing.ExpiresAt = account.ExpiresAt
+				existing.Region = account.Region
+				if account.Email != "" {
+					existing.Email = account.Email
+				}
+				if account.AuthMethod != "" {
+					existing.AuthMethod = account.AuthMethod
+				}
+				if account.Provider != "" {
+					existing.Provider = account.Provider
+				}
+				if account.StartUrl != "" {
+					existing.StartUrl = account.StartUrl
+				}
+				if account.ProfileArn != "" {
+					existing.ProfileArn = account.ProfileArn
+				}
+				if account.MachineId != "" && existing.MachineId == "" {
+					existing.MachineId = account.MachineId
+				}
+				if account.Nickname != "" {
+					existing.Nickname = account.Nickname
+				}
+				// Re-importing fresh credentials revives the account.
+				existing.Enabled = account.Enabled
+				existing.BanStatus = ""
+				existing.BanReason = ""
+				existing.BanTime = 0
+				cfg.Accounts[i] = existing
+				return existing, Save()
+			}
+		}
+	}
+
 	cfg.Accounts = append(cfg.Accounts, account)
-	return Save()
+	return account, Save()
 }
 
 func UpdateAccount(id string, account Account) error {

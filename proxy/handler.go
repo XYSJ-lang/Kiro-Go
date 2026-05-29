@@ -2516,11 +2516,13 @@ func (h *Handler) apiAddAccount(w http.ResponseWriter, r *http.Request) {
 		account.Region = "us-east-1"
 	}
 
-	if err := config.AddAccount(account); err != nil {
+	saved, err := config.AddAccount(account)
+	if err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+	account = saved
 
 	h.pool.Reload()
 	// 新账号若已启用且有 token，立即拉取并缓存模型列表
@@ -2917,12 +2919,13 @@ func (h *Handler) apiCompleteIamSso(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取用户信息
-	email, _, _ := auth.GetUserInfo(accessToken)
+	email, userID, _ := auth.GetUserInfo(accessToken)
 
 	// 创建账号
 	account := config.Account{
 		ID:           auth.GenerateAccountID(),
 		Email:        email,
+		UserId:       userID,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ClientID:     clientID,
@@ -2934,11 +2937,13 @@ func (h *Handler) apiCompleteIamSso(w http.ResponseWriter, r *http.Request) {
 		MachineId:    config.GenerateMachineId(),
 	}
 
-	if err := config.AddAccount(account); err != nil {
+	saved, err := config.AddAccount(account)
+	if err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+	account = saved
 
 	h.pool.Reload()
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -3007,12 +3012,13 @@ func (h *Handler) apiPollBuilderIdAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 授权完成，获取用户信息
-	email, _, _ := auth.GetUserInfo(accessToken)
+	email, userID, _ := auth.GetUserInfo(accessToken)
 
 	// 创建账号
 	account := config.Account{
 		ID:           auth.GenerateAccountID(),
 		Email:        email,
+		UserId:       userID,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ClientID:     clientID,
@@ -3025,11 +3031,13 @@ func (h *Handler) apiPollBuilderIdAuth(w http.ResponseWriter, r *http.Request) {
 		MachineId:    config.GenerateMachineId(),
 	}
 
-	if err := config.AddAccount(account); err != nil {
+	saved, err := config.AddAccount(account)
+	if err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+	account = saved
 
 	h.pool.Reload()
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -3077,12 +3085,13 @@ func (h *Handler) apiImportSsoToken(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 获取用户信息
-		email, _, _ := auth.GetUserInfo(accessToken)
+		email, userID, _ := auth.GetUserInfo(accessToken)
 
 		// 创建账号
 		account := config.Account{
 			ID:           auth.GenerateAccountID(),
 			Email:        email,
+			UserId:       userID,
 			AccessToken:  accessToken,
 			RefreshToken: refreshToken,
 			ClientID:     clientID,
@@ -3094,10 +3103,12 @@ func (h *Handler) apiImportSsoToken(w http.ResponseWriter, r *http.Request) {
 			MachineId:    config.GenerateMachineId(),
 		}
 
-		if err := config.AddAccount(account); err != nil {
+		saved, err := config.AddAccount(account)
+		if err != nil {
 			errors = append(errors, err.Error())
 			continue
 		}
+		account = saved
 
 		imported = append(imported, map[string]interface{}{
 			"id":    account.ID,
@@ -3200,12 +3211,13 @@ func (h *Handler) apiImportCredentials(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取用户信息
-	email, _, _ := auth.GetUserInfo(accessToken)
+	email, userID, _ := auth.GetUserInfo(accessToken)
 
 	// 创建账号
 	account := config.Account{
 		ID:           auth.GenerateAccountID(),
 		Email:        email,
+		UserId:       userID,
 		AccessToken:  accessToken,
 		RefreshToken: req.RefreshToken,
 		ClientID:     req.ClientID,
@@ -3219,11 +3231,13 @@ func (h *Handler) apiImportCredentials(w http.ResponseWriter, r *http.Request) {
 		ProfileArn:   newProfileArn,
 	}
 
-	if err := config.AddAccount(account); err != nil {
+	saved, err := config.AddAccount(account)
+	if err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+	account = saved
 
 	h.pool.Reload()
 	json.NewEncoder(w).Encode(map[string]interface{}{
