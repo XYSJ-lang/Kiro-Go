@@ -134,20 +134,31 @@ export const normalizeAccount = (account) => {
     ? Math.floor(new Date(`${account.nextResetDate}T00:00:00Z`).getTime() / 1000)
     : null
 
+  const usageCurrent = account.usageCurrent ?? 0
+  const usageLimit = account.usageLimit ?? 0
+  const currentOverages = account.currentOverages ?? 0
+  const overageRate = account.overageRate ?? 0
+
   const breakdown = {
-    resourceType: 'AGENTIC_REQUEST',
-    currentUsage: account.usageCurrent ?? 0,
-    currentUsageWithPrecision: account.usageCurrent ?? 0,
-    usageLimit: account.usageLimit ?? 0,
-    usageLimitWithPrecision: account.usageLimit ?? 0,
+    // 真实响应：resourceType='CREDIT'，displayName='Credit'，unit='INVOCATIONS'
+    // （AGENTIC_REQUEST 只是请求参数，不是响应字段）
+    resourceType: 'CREDIT',
+    displayName: 'Credit',
+    displayNamePlural: 'Credits',
+    unit: 'INVOCATIONS',
     currency: 'USD',
-    overageRate: account.overageRate ?? 0,
+    currentUsage: usageCurrent,
+    currentUsageWithPrecision: usageCurrent,
+    usageLimit,
+    usageLimitWithPrecision: usageLimit,
+    overageRate,
     overageCap: account.overageCap ?? 0,
     overageCapWithPrecision: account.overageCap ?? 0,
-    currentOverages: account.currentOverages ?? 0,
-    currentOveragesWithPrecision: account.currentOverages ?? 0,
-    // 主模型里 currentOverages 即为本期已产生的超额费用（USD）
-    overageCharges: account.currentOverages ?? 0,
+    currentOverages,
+    currentOveragesWithPrecision: currentOverages,
+    // 真实公式：overageCharges = currentOverages × overageRate（美元费用）
+    // 后端未解析该字段，但 currentOverages 与 overageRate 均已持久化，可在此算出
+    overageCharges: currentOverages * overageRate,
     nextDateReset: resetEpoch,
     bonuses: [],
   }
