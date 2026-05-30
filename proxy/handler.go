@@ -2240,6 +2240,8 @@ func (h *Handler) handleAdminAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !config.VerifyPassword(password) {
+		// 登录失败延迟 2 秒，提高暴力破解成本
+		time.Sleep(2 * time.Second)
 		w.WriteHeader(401)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
 		return
