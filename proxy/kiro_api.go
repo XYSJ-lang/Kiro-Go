@@ -439,7 +439,7 @@ func parseSubscriptionType(raw string) string {
 // 响应结构体
 type UsageLimitsResponse struct {
 	UsageBreakdownList   []UsageBreakdown      `json:"usageBreakdownList"`
-	NextDateReset        json.Number           `json:"nextDateReset"`
+	NextDateReset        json.RawMessage       `json:"nextDateReset"`
 	SubscriptionInfo     *SubscriptionInfo     `json:"subscriptionInfo"`
 	UserInfo             *UserInfo             `json:"userInfo"`
 	OverageConfiguration *OverageConfiguration `json:"overageConfiguration"`
@@ -464,27 +464,27 @@ type UsageBreakdown struct {
 	Currency                     string         `json:"currency"`
 	Unit                         string         `json:"unit"`
 	OverageRate                  float64        `json:"overageRate"`
-	DisplayName                  string         `json:"displayName"`
-	DisplayNamePlural            string         `json:"displayNamePlural"`
-	NextDateReset                json.Number    `json:"nextDateReset"`
-	FreeTrialInfo                *FreeTrialInfo `json:"freeTrialInfo"`
-	Bonuses                      []BonusInfo    `json:"bonuses"`
+	DisplayName                  string          `json:"displayName"`
+	DisplayNamePlural            string          `json:"displayNamePlural"`
+	NextDateReset                json.RawMessage `json:"nextDateReset"`
+	FreeTrialInfo                *FreeTrialInfo  `json:"freeTrialInfo"`
+	Bonuses                      []BonusInfo     `json:"bonuses"`
 }
 
 type FreeTrialInfo struct {
-	CurrentUsage    float64     `json:"currentUsage"`
-	UsageLimit      float64     `json:"usageLimit"`
-	FreeTrialStatus string      `json:"freeTrialStatus"`
-	FreeTrialExpiry json.Number `json:"freeTrialExpiry"`
+	CurrentUsage    float64         `json:"currentUsage"`
+	UsageLimit      float64         `json:"usageLimit"`
+	FreeTrialStatus string          `json:"freeTrialStatus"`
+	FreeTrialExpiry json.RawMessage `json:"freeTrialExpiry"`
 }
 
 type BonusInfo struct {
-	BonusCode    string      `json:"bonusCode"`
-	DisplayName  string      `json:"displayName"`
-	CurrentUsage float64     `json:"currentUsage"`
-	UsageLimit   float64     `json:"usageLimit"`
-	ExpiresAt    json.Number `json:"expiresAt"`
-	Status       string      `json:"status"`
+	BonusCode    string          `json:"bonusCode"`
+	DisplayName  string          `json:"displayName"`
+	CurrentUsage float64         `json:"currentUsage"`
+	UsageLimit   float64         `json:"usageLimit"`
+	ExpiresAt    json.RawMessage `json:"expiresAt"`
+	Status       string          `json:"status"`
 }
 
 type SubscriptionInfo struct {
