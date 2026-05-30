@@ -672,7 +672,7 @@ func UpdateSettings(apiKey string, requireApiKey bool, password string) error {
 	return Save()
 }
 
-func UpdateSettingsPatch(apiKey *string, requireApiKey *bool, password string) error {
+func UpdateSettingsPatch(apiKey *string, requireApiKey *bool, password string, host *string, port *int) error {
 	cfgLock.Lock()
 	defer cfgLock.Unlock()
 	if apiKey != nil {
@@ -687,6 +687,12 @@ func UpdateSettingsPatch(apiKey *string, requireApiKey *bool, password string) e
 			return err
 		}
 		cfg.Password = string(hash)
+	}
+	if host != nil && *host != "" {
+		cfg.Host = *host
+	}
+	if port != nil && *port > 0 && *port <= 65535 {
+		cfg.Port = *port
 	}
 	return Save()
 }

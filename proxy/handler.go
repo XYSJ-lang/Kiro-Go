@@ -3192,6 +3192,8 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		RequireApiKey  *bool   `json:"requireApiKey,omitempty"`
 		Password       string  `json:"password,omitempty"`
 		AllowOverUsage *bool   `json:"allowOverUsage,omitempty"`
+		Host           *string `json:"host,omitempty"`
+		Port           *int    `json:"port,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(400)
@@ -3199,7 +3201,14 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.UpdateSettingsPatch(req.ApiKey, req.RequireApiKey, req.Password); err != nil {
+	// 端口范围校验（host 在 config.UpdateSettingsPatch 内只做空字符串过滤，不强校验格式）
+	if req.Port != nil && (*req.Port < 1 || *req.Port > 65535) {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "port must be in [1, 65535]"})
+		return
+	}
+
+	if err := config.UpdateSettingsPatch(req.ApiKey, req.RequireApiKey, req.Password, req.Host, req.Port); err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return

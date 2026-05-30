@@ -15,7 +15,7 @@ func TestUpdateSettingsPatchPreservesOmittedAPIKeyFields(t *testing.T) {
 		t.Fatalf("seed settings: %v", err)
 	}
 
-	if err := UpdateSettingsPatch(nil, nil, "new-admin-password"); err != nil {
+	if err := UpdateSettingsPatch(nil, nil, "new-admin-password", nil, nil); err != nil {
 		t.Fatalf("patch settings: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestUpdateSettingsPatchCanExplicitlyDisableAPIKey(t *testing.T) {
 
 	emptyKey := ""
 	requireAPIKey := false
-	if err := UpdateSettingsPatch(&emptyKey, &requireAPIKey, ""); err != nil {
+	if err := UpdateSettingsPatch(&emptyKey, &requireAPIKey, "", nil, nil); err != nil {
 		t.Fatalf("patch settings: %v", err)
 	}
 
