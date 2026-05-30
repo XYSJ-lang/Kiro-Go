@@ -66,6 +66,21 @@ func (h *Handler) disableAccount(account *config.Account, banStatus, banReason s
 	}
 
 	logger.Warnf("[AccountFailover] Disabled %s: %s", account.Email, banReason)
+
+	// 审计日志：账号被系统自动禁用
+	config.AddAuditLog(config.AuditLog{
+		Action:  "account.auto_disable",
+		Level:   "warning",
+		User:    "system",
+		Message: "Account auto-disabled: " + banReason,
+		Target:  account.Email,
+		Metadata: map[string]interface{}{
+			"accountId": account.ID,
+			"banStatus": banStatus,
+			"banReason": banReason,
+		},
+	})
+
 	h.pool.Reload()
 }
 

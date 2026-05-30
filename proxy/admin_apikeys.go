@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"fmt"
 	"kiro-go/config"
 	"net/http"
 )
@@ -98,6 +99,20 @@ func (h *Handler) apiCreateApiKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "apikey.create",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("API key created: %s", entry.Name),
+		Target:  entry.Name,
+		Metadata: map[string]interface{}{
+			"keyId":       entry.ID,
+			"tokenLimit":  entry.TokenLimit,
+			"creditLimit": entry.CreditLimit,
+		},
+	})
+
 	// Return the cleartext key exactly once on creation so the operator can copy it.
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -159,6 +174,20 @@ func (h *Handler) apiUpdateApiKey(w http.ResponseWriter, r *http.Request, id str
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to reload entry"})
 		return
 	}
+
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "apikey.update",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("API key updated: %s", updated.Name),
+		Target:  updated.Name,
+		Metadata: map[string]interface{}{
+			"keyId":   id,
+			"enabled": updated.Enabled,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"apiKey":  toApiKeyView(*updated),
@@ -166,11 +195,30 @@ func (h *Handler) apiUpdateApiKey(w http.ResponseWriter, r *http.Request, id str
 }
 
 func (h *Handler) apiDeleteApiKey(w http.ResponseWriter, r *http.Request, id string) {
+	// 删除前获取密钥名称，用于审计日志
+	var keyName string
+	if existing := config.GetApiKeyEntry(id); existing != nil {
+		keyName = existing.Name
+	}
+
 	if err := config.DeleteApiKey(id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "apikey.delete",
+		Level:   "warning",
+		User:    "admin",
+		Message: fmt.Sprintf("API key deleted: %s", keyName),
+		Target:  keyName,
+		Metadata: map[string]interface{}{
+			"keyId": id,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
@@ -181,6 +229,23 @@ func (h *Handler) apiResetApiKeyUsage(w http.ResponseWriter, r *http.Request, id
 		return
 	}
 	updated := config.GetApiKeyEntry(id)
+
+	// 审计日志（main 基底没有 key 轮换，对应的管理操作是重置用量）
+	var keyName string
+	if updated != nil {
+		keyName = updated.Name
+	}
+	config.AddAuditLog(config.AuditLog{
+		Action:  "apikey.reset_usage",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("API key usage reset: %s", keyName),
+		Target:  keyName,
+		Metadata: map[string]interface{}{
+			"keyId": id,
+		},
+	})
+
 	if updated == nil {
 		json.NewEncoder(w).Encode(map[string]bool{"success": true})
 		return

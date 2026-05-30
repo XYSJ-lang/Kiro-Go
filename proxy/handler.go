@@ -9,6 +9,7 @@ import (
 	"kiro-go/logger"
 	"kiro-go/pool"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -818,14 +819,14 @@ func (h *Handler) handleClaudeMessagesInternal(w http.ResponseWriter, r *http.Re
 	// Stream or non-stream
 	apiKeyID := apiKeyIDFromContext(r.Context())
 	if req.Stream {
-		h.handleClaudeStream(w, kiroPayload, req.Model, thinking, thinkingResponseOpts, estimatedInputTokens, cacheProfile, apiKeyID)
+		h.handleClaudeStream(w, r, kiroPayload, req.Model, thinking, thinkingResponseOpts, estimatedInputTokens, cacheProfile, apiKeyID)
 	} else {
-		h.handleClaudeNonStream(w, kiroPayload, req.Model, thinking, thinkingResponseOpts, estimatedInputTokens, cacheProfile, apiKeyID)
+		h.handleClaudeNonStream(w, r, kiroPayload, req.Model, thinking, thinkingResponseOpts, estimatedInputTokens, cacheProfile, apiKeyID)
 	}
 }
 
 // handleClaudeStream Claude 流式响应
-func (h *Handler) handleClaudeStream(w http.ResponseWriter, payload *KiroPayload, model string, thinking bool, thinkingOpts claudeThinkingResponseOptions, estimatedInputTokens int, cacheProfile *promptCacheProfile, apiKeyID string) {
+func (h *Handler) handleClaudeStream(w http.ResponseWriter, r *http.Request, payload *KiroPayload, model string, thinking bool, thinkingOpts claudeThinkingResponseOptions, estimatedInputTokens int, cacheProfile *promptCacheProfile, apiKeyID string) {
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -1208,6 +1209,22 @@ func (h *Handler) handleClaudeStream(w http.ResponseWriter, payload *KiroPayload
 				"type":  "error",
 				"error": map[string]string{"type": "api_error", "message": err.Error()},
 			})
+
+			// 记录失败请求日志
+			config.AddRequestLog(config.RequestLog{
+				Timestamp:    time.Now().UnixMilli(),
+				Method:       "POST",
+				Path:         "/v1/messages",
+				Model:        model,
+				AccountEmail: account.Email,
+				StatusCode:   500,
+				Success:      false,
+				ErrorMessage: err.Error(),
+				InputTokens:  estimatedInputTokens,
+				IPAddress:    r.RemoteAddr,
+				UserAgent:    r.Header.Get("User-Agent"),
+				Stream:       true,
+			})
 			return
 		}
 
@@ -1254,6 +1271,24 @@ func (h *Handler) handleClaudeStream(w http.ResponseWriter, payload *KiroPayload
 		h.sendSSE(w, flusher, "message_stop", map[string]interface{}{
 			"type": "message_stop",
 		})
+
+		// 记录请求日志
+		config.AddRequestLog(config.RequestLog{
+			Timestamp:                time.Now().UnixMilli(),
+			Method:                   "POST",
+			Path:                     "/v1/messages",
+			Model:                    model,
+			AccountEmail:             account.Email,
+			StatusCode:               200,
+			Success:                  true,
+			InputTokens:              inputTokens,
+			OutputTokens:             outputTokens,
+			CacheCreationInputTokens: cacheUsage.CacheCreationInputTokens,
+			CacheReadInputTokens:     cacheUsage.CacheReadInputTokens,
+			IPAddress:                r.RemoteAddr,
+			UserAgent:                r.Header.Get("User-Agent"),
+			Stream:                   true,
+		})
 		return
 	}
 
@@ -1263,6 +1298,22 @@ func (h *Handler) handleClaudeStream(w http.ResponseWriter, payload *KiroPayload
 	}
 
 	h.recordFailure()
+
+	// 记录失败请求日志
+	config.AddRequestLog(config.RequestLog{
+		Timestamp:    time.Now().UnixMilli(),
+		Method:       "POST",
+		Path:         "/v1/messages",
+		Model:        model,
+		StatusCode:   500,
+		Success:      false,
+		ErrorMessage: lastErr.Error(),
+		InputTokens:  estimatedInputTokens,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.Header.Get("User-Agent"),
+		Stream:       true,
+	})
+
 	h.sendClaudeError(w, 500, "api_error", lastErr.Error())
 }
 
@@ -1340,7 +1391,7 @@ func (h *Handler) recordFailure() {
 }
 
 // handleClaudeNonStream Claude 非流式响应
-func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, payload *KiroPayload, model string, thinking bool, thinkingOpts claudeThinkingResponseOptions, estimatedInputTokens int, cacheProfile *promptCacheProfile, apiKeyID string) {
+func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, r *http.Request, payload *KiroPayload, model string, thinking bool, thinkingOpts claudeThinkingResponseOptions, estimatedInputTokens int, cacheProfile *promptCacheProfile, apiKeyID string) {
 	excluded := make(map[string]bool)
 	var lastErr error
 
@@ -1447,6 +1498,24 @@ func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, payload *KiroPayl
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(resp)
+
+		// 记录请求日志
+		config.AddRequestLog(config.RequestLog{
+			Timestamp:                time.Now().UnixMilli(),
+			Method:                   "POST",
+			Path:                     "/v1/messages",
+			Model:                    model,
+			AccountEmail:             account.Email,
+			StatusCode:               200,
+			Success:                  true,
+			InputTokens:              inputTokens,
+			OutputTokens:             outputTokens,
+			CacheCreationInputTokens: cacheUsage.CacheCreationInputTokens,
+			CacheReadInputTokens:     cacheUsage.CacheReadInputTokens,
+			IPAddress:                r.RemoteAddr,
+			UserAgent:                r.Header.Get("User-Agent"),
+			Stream:                   false,
+		})
 		return
 	}
 
@@ -1456,6 +1525,22 @@ func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, payload *KiroPayl
 	}
 
 	h.recordFailure()
+
+	// 记录失败请求日志
+	config.AddRequestLog(config.RequestLog{
+		Timestamp:    time.Now().UnixMilli(),
+		Method:       "POST",
+		Path:         "/v1/messages",
+		Model:        model,
+		StatusCode:   500,
+		Success:      false,
+		ErrorMessage: lastErr.Error(),
+		InputTokens:  estimatedInputTokens,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.Header.Get("User-Agent"),
+		Stream:       false,
+	})
+
 	h.sendClaudeError(w, 500, "api_error", lastErr.Error())
 }
 
@@ -1504,14 +1589,14 @@ func (h *Handler) handleOpenAIChat(w http.ResponseWriter, r *http.Request) {
 
 	apiKeyID := apiKeyIDFromContext(r.Context())
 	if req.Stream {
-		h.handleOpenAIStream(w, kiroPayload, req.Model, thinking, estimatedInputTokens, apiKeyID)
+		h.handleOpenAIStream(w, r, kiroPayload, req.Model, thinking, estimatedInputTokens, apiKeyID)
 	} else {
-		h.handleOpenAINonStream(w, kiroPayload, req.Model, thinking, estimatedInputTokens, apiKeyID)
+		h.handleOpenAINonStream(w, r, kiroPayload, req.Model, thinking, estimatedInputTokens, apiKeyID)
 	}
 }
 
 // handleOpenAIStream OpenAI 流式响应
-func (h *Handler) handleOpenAIStream(w http.ResponseWriter, payload *KiroPayload, model string, thinking bool, estimatedInputTokens int, apiKeyID string) {
+func (h *Handler) handleOpenAIStream(w http.ResponseWriter, r *http.Request, payload *KiroPayload, model string, thinking bool, estimatedInputTokens int, apiKeyID string) {
 	w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -1831,6 +1916,22 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, payload *KiroPayload
 				continue
 			}
 			h.recordFailure()
+
+			// 记录失败请求日志
+			config.AddRequestLog(config.RequestLog{
+				Timestamp:    time.Now().UnixMilli(),
+				Method:       "POST",
+				Path:         "/v1/chat/completions",
+				Model:        model,
+				AccountEmail: account.Email,
+				StatusCode:   500,
+				Success:      false,
+				ErrorMessage: err.Error(),
+				InputTokens:  estimatedInputTokens,
+				IPAddress:    r.RemoteAddr,
+				UserAgent:    r.Header.Get("User-Agent"),
+				Stream:       true,
+			})
 			return
 		}
 
@@ -1887,6 +1988,22 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, payload *KiroPayload
 		fmt.Fprintf(w, "data: %s\n\n", string(data))
 		fmt.Fprintf(w, "data: [DONE]\n\n")
 		flusher.Flush()
+
+		// 记录请求日志
+		config.AddRequestLog(config.RequestLog{
+			Timestamp:    time.Now().UnixMilli(),
+			Method:       "POST",
+			Path:         "/v1/chat/completions",
+			Model:        model,
+			AccountEmail: account.Email,
+			StatusCode:   200,
+			Success:      true,
+			InputTokens:  inputTokens,
+			OutputTokens: outputTokens,
+			IPAddress:    r.RemoteAddr,
+			UserAgent:    r.Header.Get("User-Agent"),
+			Stream:       true,
+		})
 		return
 	}
 
@@ -1896,11 +2013,27 @@ func (h *Handler) handleOpenAIStream(w http.ResponseWriter, payload *KiroPayload
 	}
 
 	h.recordFailure()
+
+	// 记录失败请求日志
+	config.AddRequestLog(config.RequestLog{
+		Timestamp:    time.Now().UnixMilli(),
+		Method:       "POST",
+		Path:         "/v1/chat/completions",
+		Model:        model,
+		StatusCode:   500,
+		Success:      false,
+		ErrorMessage: lastErr.Error(),
+		InputTokens:  estimatedInputTokens,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.Header.Get("User-Agent"),
+		Stream:       true,
+	})
+
 	h.sendOpenAIError(w, 500, "server_error", lastErr.Error())
 }
 
 // handleOpenAINonStream OpenAI 非流式响应
-func (h *Handler) handleOpenAINonStream(w http.ResponseWriter, payload *KiroPayload, model string, thinking bool, estimatedInputTokens int, apiKeyID string) {
+func (h *Handler) handleOpenAINonStream(w http.ResponseWriter, r *http.Request, payload *KiroPayload, model string, thinking bool, estimatedInputTokens int, apiKeyID string) {
 	excluded := make(map[string]bool)
 	var lastErr error
 
@@ -1969,6 +2102,22 @@ func (h *Handler) handleOpenAINonStream(w http.ResponseWriter, payload *KiroPayl
 		resp := KiroToOpenAIResponseWithReasoning(finalContent, reasoningContent, toolUses, inputTokens, outputTokens, model, thinkingFormat)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(resp)
+
+		// 记录请求日志
+		config.AddRequestLog(config.RequestLog{
+			Timestamp:    time.Now().UnixMilli(),
+			Method:       "POST",
+			Path:         "/v1/chat/completions",
+			Model:        model,
+			AccountEmail: account.Email,
+			StatusCode:   200,
+			Success:      true,
+			InputTokens:  inputTokens,
+			OutputTokens: outputTokens,
+			IPAddress:    r.RemoteAddr,
+			UserAgent:    r.Header.Get("User-Agent"),
+			Stream:       false,
+		})
 		return
 	}
 
@@ -1978,6 +2127,22 @@ func (h *Handler) handleOpenAINonStream(w http.ResponseWriter, payload *KiroPayl
 	}
 
 	h.recordFailure()
+
+	// 记录失败请求日志
+	config.AddRequestLog(config.RequestLog{
+		Timestamp:    time.Now().UnixMilli(),
+		Method:       "POST",
+		Path:         "/v1/chat/completions",
+		Model:        model,
+		StatusCode:   500,
+		Success:      false,
+		ErrorMessage: lastErr.Error(),
+		InputTokens:  estimatedInputTokens,
+		IPAddress:    r.RemoteAddr,
+		UserAgent:    r.Header.Get("User-Agent"),
+		Stream:       false,
+	})
+
 	h.sendOpenAIError(w, 500, "server_error", lastErr.Error())
 }
 
@@ -2140,6 +2305,14 @@ func (h *Handler) handleAdminAPI(w http.ResponseWriter, r *http.Request) {
 		h.apiGetVersion(w, r)
 	case path == "/export" && r.Method == "POST":
 		h.apiExportAccounts(w, r)
+	case path == "/audit-logs" && r.Method == "GET":
+		h.apiGetAuditLogs(w, r)
+	case path == "/audit-logs" && r.Method == "DELETE":
+		h.apiClearAuditLogs(w, r)
+	case path == "/request-logs" && r.Method == "GET":
+		h.apiGetRequestLogs(w, r)
+	case path == "/request-logs" && r.Method == "DELETE":
+		h.apiClearRequestLogs(w, r)
 	case path == "/api-keys" && r.Method == "GET":
 		h.apiListApiKeys(w, r)
 	case path == "/api-keys" && r.Method == "POST":
@@ -2251,16 +2424,54 @@ func (h *Handler) apiAddAccount(w http.ResponseWriter, r *http.Request) {
 			}
 		}(account)
 	}
+
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "account.create",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("Account created: %s", account.Email),
+		Target:  account.Email,
+		Metadata: map[string]interface{}{
+			"accountId":  account.ID,
+			"authMethod": account.AuthMethod,
+			"region":     account.Region,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "id": account.ID})
 }
 
 func (h *Handler) apiDeleteAccount(w http.ResponseWriter, r *http.Request, id string) {
+	// 删除前获取账号信息，用于审计日志
+	accounts := config.GetAccounts()
+	var accountEmail string
+	for _, acc := range accounts {
+		if acc.ID == id {
+			accountEmail = acc.Email
+			break
+		}
+	}
+
 	if err := config.DeleteAccount(id); err != nil {
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 	h.pool.Reload()
+
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "account.delete",
+		Level:   "warning",
+		User:    "admin",
+		Message: fmt.Sprintf("Account deleted: %s", accountEmail),
+		Target:  accountEmail,
+		Metadata: map[string]interface{}{
+			"accountId": id,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
@@ -2320,6 +2531,26 @@ func (h *Handler) apiUpdateAccount(w http.ResponseWriter, r *http.Request, id st
 			}
 		}(*existing)
 	}
+
+	// 审计日志（不记录敏感令牌）
+	changes := make(map[string]interface{})
+	for key, value := range updates {
+		if key != "accessToken" && key != "refreshToken" {
+			changes[key] = value
+		}
+	}
+	config.AddAuditLog(config.AuditLog{
+		Action:  "account.update",
+		Level:   "info",
+		User:    "admin",
+		Message: fmt.Sprintf("Account updated: %s", existing.Email),
+		Target:  existing.Email,
+		Changes: changes,
+		Metadata: map[string]interface{}{
+			"accountId": id,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
@@ -2983,6 +3214,17 @@ func (h *Handler) apiUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		h.pool.Reload()
 	}
 
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "settings.update",
+		Level:   "info",
+		User:    "admin",
+		Message: "Settings updated",
+		Metadata: map[string]interface{}{
+			"allowOverUsage": req.AllowOverUsage,
+		},
+	})
+
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
@@ -3006,6 +3248,15 @@ func (h *Handler) apiResetStats(w http.ResponseWriter, r *http.Request) {
 	h.totalCredits = 0
 	h.creditsMu.Unlock()
 	config.UpdateStats(0, 0, 0, 0, 0)
+
+	// 审计日志
+	config.AddAuditLog(config.AuditLog{
+		Action:  "stats.reset",
+		Level:   "warning",
+		User:    "admin",
+		Message: "Statistics reset",
+	})
+
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
@@ -3623,4 +3874,118 @@ func clampInt(v, min, max int) int {
 		return max
 	}
 	return v
+}
+
+// ==================== 审计日志 API ====================
+
+// apiGetAuditLogs 返回审计日志列表（最新在前）。
+func (h *Handler) apiGetAuditLogs(w http.ResponseWriter, r *http.Request) {
+	logs := config.GetAuditLogs()
+	json.NewEncoder(w).Encode(logs)
+}
+
+// apiClearAuditLogs 清空审计日志，并记录一条清空操作的审计日志。
+func (h *Handler) apiClearAuditLogs(w http.ResponseWriter, r *http.Request) {
+	if err := config.ClearAuditLogs(); err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// 记录清空操作
+	config.AddAuditLog(config.AuditLog{
+		Action:  "auditlogs.clear",
+		Level:   "warning",
+		User:    "admin",
+		Message: "Audit logs cleared",
+	})
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+// ==================== 请求日志 API ====================
+
+// apiGetRequestLogs 返回请求日志，支持分页（page/pageSize，pageSize=0 返回全部）。
+func (h *Handler) apiGetRequestLogs(w http.ResponseWriter, r *http.Request) {
+	// 获取分页参数
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("pageSize")
+
+	page := 1
+	pageSize := 50 // 默认每页 50 条
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps >= 0 {
+			pageSize = ps
+		}
+	}
+
+	allLogs := config.GetRequestLogs()
+	total := len(allLogs)
+
+	// pageSize 为 0 表示返回全部
+	if pageSize == 0 {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"logs":     allLogs,
+			"total":    total,
+			"page":     1,
+			"pageSize": total,
+			"pages":    1,
+		})
+		return
+	}
+
+	// 计算分页
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	if start >= total {
+		// 超出范围，返回空数组
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"logs":     []interface{}{},
+			"total":    total,
+			"page":     page,
+			"pageSize": pageSize,
+			"pages":    (total + pageSize - 1) / pageSize,
+		})
+		return
+	}
+
+	if end > total {
+		end = total
+	}
+
+	logs := allLogs[start:end]
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"logs":     logs,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+		"pages":    (total + pageSize - 1) / pageSize,
+	})
+}
+
+// apiClearRequestLogs 清空请求日志，并记录一条清空操作的审计日志。
+func (h *Handler) apiClearRequestLogs(w http.ResponseWriter, r *http.Request) {
+	if err := config.ClearRequestLogs(); err != nil {
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// 记录清空操作
+	config.AddAuditLog(config.AuditLog{
+		Action:  "requestlogs.clear",
+		Level:   "warning",
+		User:    "admin",
+		Message: "Request logs cleared",
+	})
+
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
