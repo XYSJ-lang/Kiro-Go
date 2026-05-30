@@ -41,16 +41,16 @@ func GetUsageLimits(account *config.Account) (*UsageLimitsResponse, json.RawMess
 	if err != nil {
 		return nil, nil, err
 	}
+	// 无论状态码，完整原始响应体都留档到 data/upstream.log（持久化，便于事后审查）。
+	// 控制台是否打印响应体由状态码决定，见下方。
+	config.AppendUpstreamLog("getUsageLimits", resp.StatusCode, string(body))
+
 	if resp.StatusCode != 200 {
-		// 非 200：完整原始 JSON 留档 upstream.log，并随 error 透传（调用方会打到日志），
-		// 便于排查上游错误。
-		config.AppendUpstreamLog("getUsageLimits", resp.StatusCode, string(body))
+		// 非 200：body 额外随 error 透传，调用方会打到控制台日志，便于即时排查。
 		return nil, nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
-	// 200 成功：不再打印/留档完整 JSON（调用方只打一行简提，避免每 30 分钟刷屏）。
-	// 原始响应仍通过返回值存入 Account.UsageData，供面板按需解析。
-
+	// 200 成功：body 已写入 upstream.log；控制台仅由调用方打一行简提，不刷屏。
 	var result UsageLimitsResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, nil, err

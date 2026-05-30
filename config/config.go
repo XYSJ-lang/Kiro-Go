@@ -1182,13 +1182,14 @@ func ClearRequestLogs() error {
 
 // AppendUpstreamLog 把上游响应原始 body 追加到 upstream.log。每条记录格式：
 //
-//	[2026-05-30T19:54:44Z] [Kiro IDE] HTTP 429
-//	{"message":"...","reason":null}
+//	[2026-05-30T19:54:44Z] [Kiro IDE] HTTP 200
+//	{"usageBreakdownList":[...],...}
 //	---
 //
 // 失败时静默：不能因为日志写入失败影响主请求流程。
-// 用途：仅在非 200（上游错误）响应时调用，把完整原始 body 留档便于排查；
-// 成功响应不写此文件，避免日志无意义增长。
+// 用途：把完整原始响应体持久化留档（无论 200 还是错误），便于事后审查；
+// 控制台是否打印响应体由调用方按状态码决定（200 简提、非 200 全量）。
+// 注意：此文件目前无轮转，长期运行会增长，需要时由运维定期清理。
 func AppendUpstreamLog(endpoint string, statusCode int, body string) {
 	if upstreamLogPath == "" {
 		return

@@ -379,16 +379,9 @@ func CallKiroAPI(account *config.Account, payload *KiroPayload, callback *KiroSt
 			resp.Body.Close()
 			bodyText := formatUpstreamBody(errBody)
 
-			// 完整 body 始终写到 data/upstream.log 留档
+			// 非 200：完整 body 写到 data/upstream.log 留档，并完整透传到控制台日志（不截断）。
 			config.AppendUpstreamLog(ep.Name, resp.StatusCode, bodyText)
-
-			// 控制台日志：短 body 直接显示；长 body 只显示摘要 + 提示去文件查看
-			const maxConsoleBodyLen = 200
-			if len(bodyText) <= maxConsoleBodyLen {
-				lastErr = fmt.Errorf("HTTP %d from %s: %s", resp.StatusCode, ep.Name, bodyText)
-			} else {
-				lastErr = fmt.Errorf("HTTP %d from %s: %s... (full body in upstream.log)", resp.StatusCode, ep.Name, bodyText[:maxConsoleBodyLen])
-			}
+			lastErr = fmt.Errorf("HTTP %d from %s: %s", resp.StatusCode, ep.Name, bodyText)
 
 			// Authentication errors and payment errors are not retried across endpoints.
 			if resp.StatusCode == 401 || resp.StatusCode == 403 || resp.StatusCode == 402 {
