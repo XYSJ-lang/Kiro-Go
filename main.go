@@ -48,7 +48,11 @@ func main() {
 
 	// 环境变量覆盖密码
 	if envPassword := os.Getenv("ADMIN_PASSWORD"); envPassword != "" {
-		config.SetPassword(envPassword)
+		if err := config.SetPassword(envPassword); err != nil {
+			logger.Errorf("Failed to set admin password from env: %v", err)
+		} else {
+			config.Save()
+		}
 	}
 
 	// 初始化账号池

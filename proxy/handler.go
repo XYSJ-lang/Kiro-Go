@@ -2047,7 +2047,7 @@ func (h *Handler) handleAdminAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if password != config.GetPassword() {
+	if !config.VerifyPassword(password) {
 		w.WriteHeader(401)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
 		return

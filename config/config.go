@@ -18,6 +18,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // GenerateMachineId generates a UUID v4 format machine identifier.
@@ -341,12 +343,57 @@ func Save() error {
 	return os.WriteFile(cfgPath, data, 0600)
 }
 
-// SetPassword updates the admin password.
-// Primarily used for environment variable override in containerized deployments.
-func SetPassword(password string) {
+// SetPassword updates the admin password, storing it as a bcrypt hash.
+// An empty password is stored as-is (no auth). Primarily used for environment
+// variable override in containerized deployments and admin password changes.
+func SetPassword(password string) error {
+	if password == "" {
+		cfgLock.Lock()
+		defer cfgLock.Unlock()
+		cfg.Password = ""
+		return nil
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
 	cfgLock.Lock()
 	defer cfgLock.Unlock()
-	cfg.Password = password
+	cfg.Password = string(hash)
+	return nil
+}
+
+// VerifyPassword checks if the provided password matches the stored hash.
+// Supports bcrypt hashes and transparently migrates legacy plaintext passwords
+// to bcrypt on first successful match.
+func VerifyPassword(password string) bool {
+	cfgLock.RLock()
+	storedHash := cfg.Password
+	cfgLock.RUnlock()
+
+	if storedHash == "" {
+		return password == ""
+	}
+
+	// bcrypt hashes start with $2a$, $2b$, or $2y$
+	if len(storedHash) > 4 && storedHash[0] == '$' && storedHash[1] == '2' {
+		err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password))
+		return err == nil
+	}
+
+	// Legacy plaintext comparison - migrate to bcrypt hash on success
+	if storedHash == password {
+		go func() {
+			if err := SetPassword(password); err == nil {
+				Save()
+			}
+		}()
+		return true
+	}
+
+	return false
 }
 
 // GetConfigDir returns the directory containing the config JSON file.
@@ -417,9 +464,57 @@ func GetEnabledAccounts() []Account {
 	return accounts
 }
 
+// AddAccount adds a new account, or refreshes an existing one when an account
+// with the same server-assigned UserId already exists (dedupe). Re-importing
+// fresh credentials for a known user updates that account in place instead of
+// creating a duplicate, and revives a previously banned/disabled account.
 func AddAccount(account Account) error {
 	cfgLock.Lock()
 	defer cfgLock.Unlock()
+
+	if account.UserId != "" {
+		for i, a := range cfg.Accounts {
+			if a.UserId == account.UserId {
+				existing := cfg.Accounts[i]
+				// Refresh credentials and connection settings.
+				existing.AccessToken = account.AccessToken
+				existing.RefreshToken = account.RefreshToken
+				existing.ClientID = account.ClientID
+				existing.ClientSecret = account.ClientSecret
+				existing.ExpiresAt = account.ExpiresAt
+				existing.Region = account.Region
+				if account.Email != "" {
+					existing.Email = account.Email
+				}
+				if account.AuthMethod != "" {
+					existing.AuthMethod = account.AuthMethod
+				}
+				if account.Provider != "" {
+					existing.Provider = account.Provider
+				}
+				if account.StartUrl != "" {
+					existing.StartUrl = account.StartUrl
+				}
+				if account.ProfileArn != "" {
+					existing.ProfileArn = account.ProfileArn
+				}
+				if account.MachineId != "" && existing.MachineId == "" {
+					existing.MachineId = account.MachineId
+				}
+				if account.Nickname != "" {
+					existing.Nickname = account.Nickname
+				}
+				// Re-importing fresh credentials revives the account.
+				existing.Enabled = account.Enabled
+				existing.BanStatus = ""
+				existing.BanReason = ""
+				existing.BanTime = 0
+				cfg.Accounts[i] = existing
+				return Save()
+			}
+		}
+	}
+
 	cfg.Accounts = append(cfg.Accounts, account)
 	return Save()
 }
@@ -557,7 +652,11 @@ func UpdateSettings(apiKey string, requireApiKey bool, password string) error {
 	cfg.ApiKey = apiKey
 	cfg.RequireApiKey = requireApiKey
 	if password != "" {
-		cfg.Password = password
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		cfg.Password = string(hash)
 	}
 	return Save()
 }
@@ -572,7 +671,11 @@ func UpdateSettingsPatch(apiKey *string, requireApiKey *bool, password string) e
 		cfg.RequireApiKey = *requireApiKey
 	}
 	if password != "" {
-		cfg.Password = password
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		cfg.Password = string(hash)
 	}
 	return Save()
 }
