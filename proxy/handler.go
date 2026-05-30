@@ -3514,6 +3514,19 @@ func (h *Handler) apiRefreshAccount(w http.ResponseWriter, r *http.Request, id s
 		return
 	}
 
+	// 同步刷新上游 Overages 开关与超额费用（best-effort）。
+	// OverageStatus 决定配额耗尽后是否继续派发；若只在 failover 时才刷，
+	// 刚导入/上游刚开通超额的账号会有一段窗口被误判为"不可超额"而跳过。
+	// 这里随使用量一起刷新，堵上该窗口。失败不影响本次刷新成功。
+	// 持久化由 PersistOverageSnapshot → UpdateAccountOverageStatus 完成。
+	if snap, fetchErr := FetchOverageStatus(account); fetchErr != nil {
+		logger.Warnf("[RefreshAccount] overage status refresh failed for %s: %v", account.Email, fetchErr)
+	} else if persistErr := PersistOverageSnapshot(id, snap); persistErr != nil {
+		logger.Warnf("[RefreshAccount] persist overage snapshot failed for %s: %v", account.Email, persistErr)
+	} else {
+		h.pool.Reload()
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"info":    info,
