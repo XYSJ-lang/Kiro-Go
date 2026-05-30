@@ -132,19 +132,21 @@ func ResolveProfileArn(account *config.Account) (string, error) {
 		return profileArn, nil
 	}
 
-	// Try ListAvailableProfiles first
-	profileArn, err := listAvailableProfiles(account)
-	if err == nil && profileArn != "" {
-		if updateErr := config.UpdateAccountProfileArn(account.ID, profileArn); updateErr != nil {
+	// Step 1: ListAvailableProfiles
+	listArn, listErr := listAvailableProfiles(account)
+	if listErr == nil && listArn != "" {
+		if updateErr := config.UpdateAccountProfileArn(account.ID, listArn); updateErr != nil {
 			logger.Warnf("[ProfileArn] Failed to cache profile ARN for %s: %v", account.Email, updateErr)
 		}
-		account.ProfileArn = profileArn
-		return profileArn, nil
+		account.ProfileArn = listArn
+		return listArn, nil
 	}
 
-	// Fallback: refresh token to get profileArn from auth response
+	// Step 2: fallback - refresh token to get profileArn from auth response
+	var refreshErr error
 	if account.RefreshToken != "" {
-		_, _, _, refreshedArn, refreshErr := auth.RefreshToken(account)
+		var refreshedArn string
+		_, _, _, refreshedArn, refreshErr = auth.RefreshToken(account)
 		if refreshErr == nil && refreshedArn != "" {
 			if updateErr := config.UpdateAccountProfileArn(account.ID, refreshedArn); updateErr != nil {
 				logger.Warnf("[ProfileArn] Failed to cache profile ARN for %s: %v", account.Email, updateErr)
@@ -154,7 +156,20 @@ func ResolveProfileArn(account *config.Account) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no available Kiro profile")
+	// 没有响应体可透传 —— 拼出"两步分别失败原因"的诊断错误，
+	// 比单纯的 "no available Kiro profile" 信息量更大。
+	switch {
+	case listErr != nil && refreshErr != nil:
+		return "", fmt.Errorf("no available Kiro profile (list: %v; refresh: %v)", listErr, refreshErr)
+	case listErr != nil:
+		return "", fmt.Errorf("no available Kiro profile (list: %v; no refresh token)", listErr)
+	case refreshErr != nil:
+		return "", fmt.Errorf("no available Kiro profile (list returned empty; refresh: %v)", refreshErr)
+	case account.RefreshToken == "":
+		return "", fmt.Errorf("no available Kiro profile (list returned empty; no refresh token)")
+	default:
+		return "", fmt.Errorf("no available Kiro profile (list and refresh both returned empty)")
+	}
 }
 
 func listAvailableProfiles(account *config.Account) (string, error) {
