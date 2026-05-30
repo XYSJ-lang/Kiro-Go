@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"kiro-go/auth"
@@ -324,6 +325,22 @@ func setKiroHeaders(req *http.Request, account *config.Account) {
 func RefreshAccountInfo(account *config.Account) (*config.AccountInfo, error) {
 	info := &config.AccountInfo{
 		LastRefresh: time.Now().Unix(),
+	}
+
+	// 在调 /getUsageLimits 之前确保 ProfileArn 已解析。Kiro IDE 的
+	// GetUsageLimitsCommand 实际带 profileArn input；我们的实现把它放进
+	// URL query (withProfileArnQuery)，但只有缓存命中时才会附加。
+	// 对支持型账号（IDE supportsProfiles=true）若没缓存先抓一次，避免
+	// 新导入账号第一次刷新就拿到不带 profileArn 的不准响应。
+	// 不支持型(Builder ID 等)的 ErrProfileArnUnsupported 静默忽略，让请求
+	// 裸发——AWS 服务端会返回这类账号能拿到的数据。
+	if strings.TrimSpace(account.ProfileArn) == "" {
+		if _, resolveErr := ResolveProfileArn(account); resolveErr != nil && !errors.Is(resolveErr, ErrProfileArnUnsupported) {
+			// 5 分钟节流避免日志风暴
+			if shouldLogProfileArnError(account.Email) {
+				logger.Warnf("[RefreshAccountInfo] resolve profileArn for %s failed: %v (continuing with bare /getUsageLimits)", account.Email, resolveErr)
+			}
+		}
 	}
 
 	// 获取使用量和订阅信息
