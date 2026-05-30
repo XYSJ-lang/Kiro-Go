@@ -5,6 +5,7 @@ package proxy
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"kiro-go/config"
@@ -321,12 +322,24 @@ func CallKiroAPI(account *config.Account, payload *KiroPayload, callback *KiroSt
 		callback = &wrapped
 	}
 
-	// payload.ProfileArn 留空也能正常发请求 —— Kiro IDE 自己对 IDC 账号都不传
-	// 这个字段，profileArn 是可选 routing hint。仅当账号已经缓存了 ProfileArn
-	// 时附带，避免每次请求白发两次 HTTP（list + refresh）去抓一个非必需值。
-	if payload != nil && strings.TrimSpace(payload.ProfileArn) == "" && account != nil {
-		if cached := strings.TrimSpace(account.ProfileArn); cached != "" {
-			payload.ProfileArn = cached
+	// payload.ProfileArn 对照 Kiro IDE resolveProfileArn 行为处理：
+	//   - 支持型账号(Enterprise/Internal/BuilderId/ExternalIdp/social)未缓存时
+	//     尝试 ListAvailableProfiles + token refresh fallback 抓取
+	//   - 不支持型(supportsProfiles=false)直接短路返回 ErrProfileArnUnsupported,
+	//     请求继续裸发(IDE 自己也是这样),不打 warn 日志避免风暴
+	//   - 其它真实失败(网络/上游错误,如 Builder ID 账号被 AWS 拒)warn 一次,
+	//     5 分钟内同账号去重
+	if payload != nil && strings.TrimSpace(payload.ProfileArn) == "" {
+		if profileArn, err := ResolveProfileArn(account); err == nil {
+			payload.ProfileArn = profileArn
+		} else if !errors.Is(err, ErrProfileArnUnsupported) {
+			accountEmail := "<nil>"
+			if account != nil {
+				accountEmail = account.Email
+			}
+			if shouldLogProfileArnError(accountEmail) {
+				logger.Warnf("[ProfileArn] Failed to resolve profile ARN for %s: %v", accountEmail, err)
+			}
 		}
 	}
 
@@ -799,6 +812,26 @@ func extractEventType(headers []byte) string {
 		}
 	}
 	return ""
+}
+
+// profileArnLogCache 缓存每个账号上次记录 ProfileArn 解析失败的时间，
+// 避免对同一账号持续失败时被日志风暴刷屏。
+var profileArnLogCache sync.Map
+
+// shouldLogProfileArnError 判断当前是否应该记录该账号的 ProfileArn 失败日志。
+// 同一邮箱 5 分钟内只记录一次（首次失败仍记录），无效邮箱则总是记录。
+func shouldLogProfileArnError(email string) bool {
+	if email == "" || email == "<nil>" {
+		return true
+	}
+	now := time.Now()
+	if lastTime, ok := profileArnLogCache.Load(email); ok {
+		if now.Sub(lastTime.(time.Time)) < 5*time.Minute {
+			return false
+		}
+	}
+	profileArnLogCache.Store(email, now)
+	return true
 }
 
 // formatUpstreamBody 把上游响应 body 处理成日志友好的单行：

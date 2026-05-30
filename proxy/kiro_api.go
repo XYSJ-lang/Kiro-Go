@@ -123,18 +123,44 @@ func ListAvailableModels(account *config.Account) ([]ModelInfo, error) {
 
 // ResolveProfileArn returns the account profile ARN, fetching and caching it
 // ErrProfileArnUnsupported indicates the account type does not support profile
-// ARN resolution (e.g. Builder ID accounts). Callers can use errors.Is to
-// distinguish this expected condition from real failures and skip noisy logs.
+// ARN resolution. Callers can use errors.Is to distinguish this expected
+// condition from real failures and skip noisy logs.
 var ErrProfileArnUnsupported = fmt.Errorf("profile ARN not available for this account type")
 
-// when it is missing. First tries ListAvailableProfiles; if that returns empty,
-// falls back to refreshing the token (which returns profileArn in the response).
+// supportsProfiles 判断给定账号的凭据是否支持 profile ARN 解析。
 //
-// Builder ID 账号(provider="BuilderId")是个特例：AWS Builder ID 凭据
-// 既不被 /ListAvailableProfiles 接受（HTTP 403 "AWS Builder ID is not
-// supported for this operation"），也不会从 OIDC 刷新响应中收到 profileArn
-// 字段。两条路天生都拿不到，直接短路返回 ErrProfileArnUnsupported 让
-// 调用方静默处理（不浪费 HTTP 调用、不刷 warn 日志）。
+// 规则对齐 Kiro IDE 客户端 supportsProfiles(token):
+//
+//	const isIdCProvider = provider === "Enterprise" || "Internal" || "BuilderId";
+//	const isExternalIdp = authMethod === "external_idp" || provider === "ExternalIdp";
+//	const isSocial      = authMethod === "social";
+//	return isIdCProvider || isExternalIdp || isSocial;
+//
+// 注意：Builder ID 在 IDE 看来是支持的（属于 IdC provider 大类），但 AWS 端
+// 对 /ListAvailableProfiles 调用会返回 HTTP 403 "AWS Builder ID is not
+// supported for this operation"。这种 server-side 拒绝走正常错误路径处理，
+// 而不是在客户端预先短路 —— 与 IDE 行为一致。
+func supportsProfiles(account *config.Account) bool {
+	if account == nil {
+		return false
+	}
+	isIdCProvider := account.Provider == "Enterprise" ||
+		account.Provider == "Internal" ||
+		account.Provider == "BuilderId"
+	isExternalIdp := account.AuthMethod == "external_idp" ||
+		account.Provider == "ExternalIdp"
+	isSocial := account.AuthMethod == "social"
+	return isIdCProvider || isExternalIdp || isSocial
+}
+
+// ResolveProfileArn returns the account profile ARN, fetching and caching it
+// when it is missing. Behavior mirrors Kiro IDE's resolveProfileArn:
+//  1. Cached value wins.
+//  2. Tokens whose type does not support profiles short-circuit to
+//     ErrProfileArnUnsupported (callers should silence the log).
+//  3. Otherwise try ListAvailableProfiles, then fall back to a token refresh
+//     (the OIDC refresh response includes profileArn for Enterprise/Internal
+//     accounts; Builder ID and others may legitimately return empty here).
 func ResolveProfileArn(account *config.Account) (string, error) {
 	if account == nil {
 		return "", fmt.Errorf("account is nil")
@@ -143,8 +169,8 @@ func ResolveProfileArn(account *config.Account) (string, error) {
 		return profileArn, nil
 	}
 
-	// Builder ID 账号短路：天生拿不到 profileArn.
-	if account.Provider == "BuilderId" {
+	// 不支持 profileArn 的凭据类型直接短路（与 IDE 客户端 guard 一致）。
+	if !supportsProfiles(account) {
 		return "", ErrProfileArnUnsupported
 	}
 
