@@ -470,3 +470,201 @@ func TestParseModelAndThinkingDoesNotRewriteDatedSnapshotMinor(t *testing.T) {
 		t.Fatalf("dated snapshot must not be rewritten with a dot, got %q", got)
 	}
 }
+
+// --- tool_result image extraction (issue: read tool returns images nested in a
+// tool_result content array; extractToolResultContent used to drop them) ---
+
+const toolResultImgPNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
+// Active tool turn: the last assistant carries a matching tool_use, so the
+// current message's tool results stay structured. An image nested in the
+// tool_result must surface on the current message's Images field.
+func TestClaudeToolResultImageOnActiveTurn(t *testing.T) {
+	req := &ClaudeRequest{
+		Model: "claude-opus-4.8",
+		Messages: []ClaudeMessage{
+			{Role: "user", Content: "read this image"},
+			{
+				Role: "assistant",
+				Content: []interface{}{
+					map[string]interface{}{"type": "tool_use", "id": "tool_1", "name": "read", "input": map[string]interface{}{"path": "a.png"}},
+				},
+			},
+			{
+				Role: "user",
+				Content: []interface{}{
+					map[string]interface{}{
+						"type":        "tool_result",
+						"tool_use_id": "tool_1",
+						"content": []interface{}{
+							map[string]interface{}{
+								"type": "image",
+								"source": map[string]interface{}{
+									"type":       "base64",
+									"media_type": "image/png",
+									"data":       toolResultImgPNG,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cur := ClaudeToKiro(req, false).ConversationState.CurrentMessage.UserInputMessage
+	if len(cur.Images) != 1 {
+		t.Fatalf("expected tool_result image on current message, got %d", len(cur.Images))
+	}
+	if cur.Images[0].Format != "png" || cur.Images[0].Source.Bytes != toolResultImgPNG {
+		t.Fatalf("unexpected image payload: %+v", cur.Images[0])
+	}
+	// Active turn keeps the tool result structured, with placeholder text since
+	// the result body was image-only.
+	if cur.UserInputMessageContext == nil || len(cur.UserInputMessageContext.ToolResults) != 1 {
+		t.Fatalf("expected active tool result preserved structurally")
+	}
+	if strings.TrimSpace(cur.UserInputMessageContext.ToolResults[0].Content[0].Text) == "" {
+		t.Fatalf("expected non-empty placeholder for image-only tool result")
+	}
+}
+
+// Mixed text + image in a tool_result: the text stays in the tool result body,
+// the image surfaces on Images.
+func TestClaudeToolResultMixedTextAndImage(t *testing.T) {
+	req := &ClaudeRequest{
+		Model: "claude-opus-4.8",
+		Messages: []ClaudeMessage{
+			{Role: "user", Content: "read this image"},
+			{
+				Role: "assistant",
+				Content: []interface{}{
+					map[string]interface{}{"type": "tool_use", "id": "tool_2", "name": "read", "input": map[string]interface{}{"path": "a.png"}},
+				},
+			},
+			{
+				Role: "user",
+				Content: []interface{}{
+					map[string]interface{}{
+						"type":        "tool_result",
+						"tool_use_id": "tool_2",
+						"content": []interface{}{
+							map[string]interface{}{"type": "text", "text": "here is the screenshot"},
+							map[string]interface{}{
+								"type": "image",
+								"source": map[string]interface{}{
+									"type":       "base64",
+									"media_type": "image/png",
+									"data":       toolResultImgPNG,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cur := ClaudeToKiro(req, false).ConversationState.CurrentMessage.UserInputMessage
+	if len(cur.Images) != 1 {
+		t.Fatalf("expected one image extracted, got %d", len(cur.Images))
+	}
+	if cur.UserInputMessageContext == nil || len(cur.UserInputMessageContext.ToolResults) != 1 {
+		t.Fatalf("expected active tool result preserved structurally")
+	}
+	if got := cur.UserInputMessageContext.ToolResults[0].Content[0].Text; got != "here is the screenshot" {
+		t.Fatalf("expected original tool text preserved, got %q", got)
+	}
+}
+
+// Orphaned tool_result (no matching assistant tool_use, e.g. after context
+// compaction): our sanitizer flattens the result into the current message text
+// to avoid an upstream 400, so it is NOT kept structurally. The image must
+// still be carried on the current message's Images field rather than dropped.
+func TestClaudeOrphanToolResultImageStillCarried(t *testing.T) {
+	req := &ClaudeRequest{
+		Model: "claude-opus-4.8",
+		Messages: []ClaudeMessage{
+			{
+				Role: "user",
+				Content: []interface{}{
+					map[string]interface{}{
+						"type":        "tool_result",
+						"tool_use_id": "orphan_1",
+						"content": []interface{}{
+							map[string]interface{}{
+								"type": "image",
+								"source": map[string]interface{}{
+									"type":       "base64",
+									"media_type": "image/png",
+									"data":       toolResultImgPNG,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cur := ClaudeToKiro(req, false).ConversationState.CurrentMessage.UserInputMessage
+	if len(cur.Images) != 1 {
+		t.Fatalf("expected orphan tool_result image carried on current message, got %d", len(cur.Images))
+	}
+	if cur.Images[0].Source.Bytes != toolResultImgPNG {
+		t.Fatalf("unexpected image payload: %+v", cur.Images[0])
+	}
+}
+
+// OpenAI path: a tool message whose content carries an image, followed by a
+// later user turn, flushes the tool result into history. Our sanitizer narrates
+// the structured ToolResults into text and clears the ToolResults slice, but the
+// extracted image must stay attached to that flushed history entry's Images.
+func TestOpenAIToolResultImageCarriedToHistory(t *testing.T) {
+	const dataURL = "data:image/png;base64," + toolResultImgPNG
+	req := &OpenAIRequest{
+		Model: "claude-sonnet-4.5",
+		Messages: []OpenAIMessage{
+			{Role: "user", Content: "look at the file"},
+			{
+				Role: "assistant",
+				ToolCalls: []ToolCall{
+					{
+						ID:   "call_img",
+						Type: "function",
+						Function: struct {
+							Name      string `json:"name"`
+							Arguments string `json:"arguments"`
+						}{Name: "read", Arguments: `{"path":"a.png"}`},
+					},
+				},
+			},
+			{
+				Role:       "tool",
+				ToolCallID: "call_img",
+				Content: []interface{}{
+					map[string]interface{}{"type": "image_url", "image_url": map[string]interface{}{"url": dataURL}},
+				},
+			},
+			{Role: "user", Content: "what do you see?"},
+		},
+	}
+
+	payload := OpenAIToKiro(req, false)
+
+	var histToolImages int
+	for _, h := range payload.ConversationState.History {
+		if h.UserInputMessage != nil {
+			histToolImages += len(h.UserInputMessage.Images)
+		}
+	}
+	if histToolImages != 1 {
+		t.Fatalf("expected tool image carried on flushed history entry, got %d", histToolImages)
+	}
+
+	// The image belongs to the historical tool turn, not the trailing user msg.
+	cur := payload.ConversationState.CurrentMessage.UserInputMessage
+	if len(cur.Images) != 0 {
+		t.Fatalf("tool image must not leak into the later user message, got %d", len(cur.Images))
+	}
+}

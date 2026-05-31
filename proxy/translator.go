@@ -45,6 +45,12 @@ const ThinkingModePrompt = `<thinking_mode>enabled</thinking_mode>
 const minimalFallbackUserContent = "."
 const toolResultsContinuationPrefix = "Tool results:"
 
+// toolResultImagePlaceholder stands in for an image-only tool_result. The image
+// itself is lifted onto the message's Images field (Kiro carries images out of
+// band), so the structured/narrated tool result needs non-empty text or the
+// upstream rejects an empty content block.
+const toolResultImagePlaceholder = "[Tool returned an image; the image is attached to this message.]"
+
 // maxPayloadBytes is the upper bound for the serialized Kiro request body.
 // Kiro's upstream rejects oversized requests with HTTP 400
 // "Input is too long." (CONTENT_LENGTH_EXCEEDS_THRESHOLD). When a converted
@@ -694,7 +700,13 @@ func extractClaudeUserContent(content interface{}) (string, []KiroImage, []KiroT
 				}
 			case "tool_result":
 				toolUseID, _ := block["tool_use_id"].(string)
-				resultContent := extractToolResultContent(block["content"])
+				resultContent, resultImages := extractToolResultContent(block["content"])
+				if len(resultImages) > 0 {
+					images = append(images, resultImages...)
+					if strings.TrimSpace(resultContent) == "" {
+						resultContent = toolResultImagePlaceholder
+					}
+				}
 				toolResults = append(toolResults, KiroToolResult{
 					ToolUseID: toolUseID,
 					Content:   []KiroResultContent{{Text: resultContent}},
@@ -745,22 +757,37 @@ func extractImageFromClaudeBlock(block map[string]interface{}) *KiroImage {
 	return nil
 }
 
-func extractToolResultContent(content interface{}) string {
+func extractToolResultContent(content interface{}) (string, []KiroImage) {
 	if s, ok := content.(string); ok {
-		return s
+		return s, nil
 	}
 	if blocks, ok := content.([]interface{}); ok {
 		var parts []string
+		var images []KiroImage
 		for _, b := range blocks {
-			if block, ok := b.(map[string]interface{}); ok {
-				if text, ok := block["text"].(string); ok {
-					parts = append(parts, text)
+			block, ok := b.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			blockType, _ := block["type"].(string)
+			switch blockType {
+			case "image", "image_url", "input_image":
+				if img := extractImageFromClaudeBlock(block); img != nil {
+					images = append(images, *img)
+					continue
 				}
 			}
+			if text, ok := block["text"].(string); ok {
+				parts = append(parts, text)
+				continue
+			}
+			if img := extractImageFromClaudeBlock(block); img != nil {
+				images = append(images, *img)
+			}
 		}
-		return strings.Join(parts, "")
+		return strings.Join(parts, ""), images
 	}
-	return ""
+	return "", nil
 }
 
 func extractClaudeAssistantContent(content interface{}) (string, []KiroToolUse) {
@@ -1186,7 +1213,17 @@ func OpenAIToKiro(req *OpenAIRequest, thinking bool) *KiroPayload {
 			})
 
 		case "tool":
-			content := extractOpenAIMessageText(msg.Content)
+			cleanText, toolImages := extractOpenAIUserContent(msg.Content)
+			var content string
+			if len(toolImages) > 0 {
+				currentImages = append(currentImages, toolImages...)
+				content = strings.TrimSpace(cleanText)
+				if content == "" {
+					content = toolResultImagePlaceholder
+				}
+			} else {
+				content = extractOpenAIMessageText(msg.Content)
+			}
 			currentToolResults = append(currentToolResults, KiroToolResult{
 				ToolUseID: msg.ToolCallID,
 				Content:   []KiroResultContent{{Text: content}},
@@ -1205,12 +1242,14 @@ func OpenAIToKiro(req *OpenAIRequest, thinking bool) *KiroPayload {
 						UserInputMessage: &KiroUserInputMessage{
 							ModelID: modelID,
 							Origin:  origin,
+							Images:  currentImages,
 							UserInputMessageContext: &UserInputMessageContext{
 								ToolResults: currentToolResults,
 							},
 						},
 					})
 					currentToolResults = nil
+					currentImages = nil
 				}
 			}
 		}
