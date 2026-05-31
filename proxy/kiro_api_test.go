@@ -99,22 +99,20 @@ func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
 }
 
-// TestResolveProfileArnAllowsBuilderID verifies that Builder ID accounts are
-// considered supported by supportsProfiles (matching Kiro IDE's client-side
-// rule: provider === "BuilderId" is in the IdC group) and therefore DO trigger
-// HTTP calls. AWS may still reject them server-side with 403, but that's a
-// different code path from client-side short-circuit.
-func TestResolveProfileArnAllowsBuilderID(t *testing.T) {
-	called := false
+// TestResolveProfileArnBuilderIDUsesFixedArn verifies that Builder ID accounts
+// resolve to the hard-coded fixed profile ARN WITHOUT any HTTP call — matching
+// Kiro IDE's getAllProfiles, which short-circuits BuilderId/Github/Google to a
+// FixedProfileArns entry instead of calling AWS ListAvailableProfiles (AWS 403s
+// Builder ID on that endpoint).
+func TestResolveProfileArnBuilderIDUsesFixedArn(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	if err := config.Init(configPath); err != nil {
+		t.Fatalf("init config: %v", err)
+	}
 	kiroRestHttpStore.Store(&http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			called = true
-			// Simulate the real-world AWS 403 for Builder ID
-			return &http.Response{
-				StatusCode: 403,
-				Body:       io.NopCloser(strings.NewReader(`{"message":"AWS Builder ID is not supported for this operation."}`)),
-				Header:     make(http.Header),
-			}, nil
+			t.Fatalf("Builder ID must NOT trigger any HTTP request (uses fixed ARN), but saw %s %s", req.Method, req.URL)
+			return nil, nil
 		}),
 	})
 	t.Cleanup(func() { InitKiroHttpClient("") })
@@ -124,17 +122,46 @@ func TestResolveProfileArnAllowsBuilderID(t *testing.T) {
 		Email:       "user@example.com",
 		Provider:    "BuilderId",
 		AccessToken: "access",
-		// No RefreshToken so we don't try the second step (avoids needing to mock OIDC).
 	}
-	_, err := ResolveProfileArn(account)
-	if err == nil {
-		t.Fatal("expected error when Builder ID gets 403 from AWS, got nil")
+	got, err := ResolveProfileArn(account)
+	if err != nil {
+		t.Fatalf("expected fixed ARN with no error, got err=%v", err)
 	}
-	if errors.Is(err, ErrProfileArnUnsupported) {
-		t.Fatalf("Builder ID should not short-circuit on supportsProfiles (it's in the IdC group); err=%v", err)
+	want := "arn:aws:codewhisperer:us-east-1:638616132270:profile/AAAACCCCXXXX"
+	if got != want {
+		t.Fatalf("Builder ID fixed ARN = %q, want %q", got, want)
 	}
-	if !called {
-		t.Fatal("expected ListAvailableProfiles to be called for Builder ID account")
+	if account.ProfileArn != want {
+		t.Fatalf("expected account to be updated with fixed ARN, got %q", account.ProfileArn)
+	}
+}
+
+// TestResolveProfileArnSocialPrefersOwnArn verifies that a social account
+// (Github/Google) with its own token-supplied profileArn keeps that value
+// rather than the shared fixed social ARN — mirroring IDE getFixedProfileArn.
+func TestResolveProfileArnSocialPrefersOwnArn(t *testing.T) {
+	kiroRestHttpStore.Store(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			t.Fatalf("social account with cached ARN must not call AWS, saw %s %s", req.Method, req.URL)
+			return nil, nil
+		}),
+	})
+	t.Cleanup(func() { InitKiroHttpClient("") })
+
+	// account.ProfileArn already set => the very first cached-value check wins.
+	account := &config.Account{
+		ID:          "acct-google",
+		Provider:    "Google",
+		AuthMethod:  "social",
+		ProfileArn:  "arn:aws:codewhisperer:us-east-1:111111111111:profile/OWN",
+		AccessToken: "access",
+	}
+	got, err := ResolveProfileArn(account)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "arn:aws:codewhisperer:us-east-1:111111111111:profile/OWN" {
+		t.Fatalf("social account should keep its own ARN, got %q", got)
 	}
 }
 

@@ -145,11 +145,6 @@ var ErrProfileArnUnsupported = fmt.Errorf("profile ARN not available for this ac
 //	const isExternalIdp = authMethod === "external_idp" || provider === "ExternalIdp";
 //	const isSocial      = authMethod === "social";
 //	return isIdCProvider || isExternalIdp || isSocial;
-//
-// 注意：Builder ID 在 IDE 看来是支持的（属于 IdC provider 大类），但 AWS 端
-// 对 /ListAvailableProfiles 调用会返回 HTTP 403 "AWS Builder ID is not
-// supported for this operation"。这种 server-side 拒绝走正常错误路径处理，
-// 而不是在客户端预先短路 —— 与 IDE 行为一致。
 func supportsProfiles(account *config.Account) bool {
 	if account == nil {
 		return false
@@ -163,20 +158,68 @@ func supportsProfiles(account *config.Account) bool {
 	return isIdCProvider || isExternalIdp || isSocial
 }
 
+// socialSignInProfileArn 与 fixedProfileArns 直接照搬 Kiro IDE
+// (packages/.../list-available-profiles.ts) 的硬编码常量。
+//
+// 关键发现：IDE 对 BuilderId / Github / Google 这三类账号【根本不调用】AWS 的
+// ListAvailableProfiles，而是在 getAllProfiles 第一步用固定 ARN 短路返回。AWS 端
+// 对 Builder ID 调 ListAvailableProfiles 会回 403 "AWS Builder ID is not supported
+// for this operation" —— 所以 IDE 干脆不发那个请求，直接用下面这张固定表的值。
+const socialSignInProfileArn = "arn:aws:codewhisperer:us-east-1:699475941385:profile/EHGA3GRVQMUK"
+
+var fixedProfileArns = map[string]string{
+	"BuilderId": "arn:aws:codewhisperer:us-east-1:638616132270:profile/AAAACCCCXXXX",
+	"Github":    socialSignInProfileArn,
+	"Google":    socialSignInProfileArn,
+}
+
+// getFixedProfileArn 返回该 provider 对应的硬编码 profileArn（若有）。
+// 对齐 IDE getFixedProfileArn：social 账号若 token 自带 profileArn 则优先用自己的，
+// 否则回退到固定表的值。这里 account.ProfileArn 即对应 token 自带的 profileArn。
+func getFixedProfileArn(account *config.Account) (string, bool) {
+	if account == nil {
+		return "", false
+	}
+	fixed, ok := fixedProfileArns[account.Provider]
+	if !ok || fixed == "" {
+		return "", false
+	}
+	if account.AuthMethod == "social" {
+		if own := strings.TrimSpace(account.ProfileArn); own != "" {
+			return own, true
+		}
+	}
+	return fixed, true
+}
+
 // ResolveProfileArn returns the account profile ARN, fetching and caching it
 // when it is missing. Behavior mirrors Kiro IDE's resolveProfileArn:
 //  1. Cached value wins.
-//  2. Tokens whose type does not support profiles short-circuit to
+//  2. BuilderId / Github / Google use a hard-coded fixed ARN and NEVER call
+//     AWS ListAvailableProfiles (IDE getAllProfiles short-circuits the same way;
+//     AWS 403s Builder ID on that endpoint, so the IDE just supplies a fixed ARN).
+//  3. Tokens whose type does not support profiles short-circuit to
 //     ErrProfileArnUnsupported (callers should silence the log).
-//  3. Otherwise try ListAvailableProfiles, then fall back to a token refresh
-//     (the OIDC refresh response includes profileArn for Enterprise/Internal
-//     accounts; Builder ID and others may legitimately return empty here).
+//  4. Otherwise (Enterprise/Internal/ExternalIdp) try ListAvailableProfiles,
+//     then fall back to a token refresh (the OIDC refresh response includes
+//     profileArn for those account types).
 func ResolveProfileArn(account *config.Account) (string, error) {
 	if account == nil {
 		return "", fmt.Errorf("account is nil")
 	}
 	if profileArn := strings.TrimSpace(account.ProfileArn); profileArn != "" {
 		return profileArn, nil
+	}
+
+	// BuilderId / Github / Google：直接用固定 ARN，不发任何 AWS 请求（与 IDE 一致）。
+	// 这避免了对 Builder ID 调 ListAvailableProfiles 必然 403、进而每次请求白刷 token
+	// 并刷 WARN 的问题。
+	if fixed, ok := getFixedProfileArn(account); ok {
+		if updateErr := config.UpdateAccountProfileArn(account.ID, fixed); updateErr != nil {
+			logger.Warnf("[ProfileArn] Failed to cache fixed profile ARN for %s: %v", account.Email, updateErr)
+		}
+		account.ProfileArn = fixed
+		return fixed, nil
 	}
 
 	// 不支持 profileArn 的凭据类型直接短路（与 IDE 客户端 guard 一致）。
