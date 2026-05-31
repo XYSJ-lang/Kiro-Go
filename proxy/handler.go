@@ -3173,14 +3173,18 @@ func (h *Handler) apiImportCredentials(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) apiGetStatus(w http.ResponseWriter, r *http.Request) {
+	// 这些计数器由请求热路径并发写（recordSuccess/recordFailure 用 atomic，
+	// credits 用 creditsMu）。必须用 atomic.Load + getCredits 读，否则裸读触发
+	// data race（totalCredits 是 float64，裸读还可能撕裂）。其余读取点
+	// （handleStats / printStats / reset）均已如此，这里曾是漏网的孤例。
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"accounts":        h.pool.Count(),
 		"available":       h.pool.AvailableCount(),
-		"totalRequests":   h.totalRequests,
-		"successRequests": h.successRequests,
-		"failedRequests":  h.failedRequests,
-		"totalTokens":     h.totalTokens,
-		"totalCredits":    h.totalCredits,
+		"totalRequests":   atomic.LoadInt64(&h.totalRequests),
+		"successRequests": atomic.LoadInt64(&h.successRequests),
+		"failedRequests":  atomic.LoadInt64(&h.failedRequests),
+		"totalTokens":     atomic.LoadInt64(&h.totalTokens),
+		"totalCredits":    h.getCredits(),
 		"uptime":          time.Now().Unix() - h.startTime,
 	})
 }
