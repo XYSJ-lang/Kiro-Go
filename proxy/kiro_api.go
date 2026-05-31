@@ -108,15 +108,24 @@ func ListAvailableModels(account *config.Account) ([]ModelInfo, error) {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	// 无论状态码，完整原始响应体都留档到 data/upstream.log（持久化，便于事后审查）。
+	// 控制台是否打印响应体由状态码决定，见下方。
+	config.AppendUpstreamLog("ListAvailableModels", resp.StatusCode, string(body))
+
 	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
+		// 非 200：body 额外随 error 透传，调用方会打到控制台日志，便于即时排查。
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
+	// 200 成功：body 已写入 upstream.log；控制台仅由调用方打一行简提，不刷屏。
 	var result struct {
 		Models []ModelInfo `json:"models"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
 	return result.Models, nil
