@@ -45,6 +45,34 @@ func isAuthErrorMessage(msg string) bool {
 		strings.Contains(msg, "refresh token expired")
 }
 
+// upstreamClientStatus 把"重试耗尽后的最后错误"映射成回给客户端的 HTTP 状态码。
+// 核心修复：上游 429（限流）必须原样透传成 429，让客户端 SDK 走指数退避；
+// 旧逻辑一律糊成 500，会被客户端当成服务端故障，触发错误的重试/放弃逻辑。
+// 判定复用 isQuotaErrorMessage（认 "429"/"quota"），与 handleAccountFailure 的
+// 配额分类同源 —— 避免"按配额冷却了账号、却给客户端回 500"的割裂。
+func upstreamClientStatus(err error) int {
+	if err != nil && isQuotaErrorMessage(err.Error()) {
+		return 429
+	}
+	return 500
+}
+
+// claudeErrTypeFor / openAIErrTypeFor 让 error.type 与状态码一致：
+// 429 用各自协议的限流类型，其余维持原有的通用错误类型。
+func claudeErrTypeFor(status int) string {
+	if status == 429 {
+		return "rate_limit_error"
+	}
+	return "api_error"
+}
+
+func openAIErrTypeFor(status int) string {
+	if status == 429 {
+		return "rate_limit_error"
+	}
+	return "server_error"
+}
+
 func (h *Handler) disableAccount(account *config.Account, banStatus, banReason string) {
 	if account == nil {
 		return

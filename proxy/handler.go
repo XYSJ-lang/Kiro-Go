@@ -1301,13 +1301,16 @@ func (h *Handler) handleClaudeStream(w http.ResponseWriter, r *http.Request, pay
 
 	h.recordFailure()
 
+	// 上游 429 透传成 429（限流），其余维持 500。避免把限流糊成服务端故障。
+	status := upstreamClientStatus(lastErr)
+
 	// 记录失败请求日志
 	config.AddRequestLog(config.RequestLog{
 		Timestamp:    time.Now().UnixMilli(),
 		Method:       "POST",
 		Path:         "/v1/messages",
 		Model:        model,
-		StatusCode:   500,
+		StatusCode:   status,
 		Success:      false,
 		ErrorMessage: lastErr.Error(),
 		InputTokens:  estimatedInputTokens,
@@ -1316,7 +1319,7 @@ func (h *Handler) handleClaudeStream(w http.ResponseWriter, r *http.Request, pay
 		Stream:       true,
 	})
 
-	h.sendClaudeError(w, 500, "api_error", lastErr.Error())
+	h.sendClaudeError(w, status, claudeErrTypeFor(status), lastErr.Error())
 }
 
 func (h *Handler) sendSSE(w http.ResponseWriter, flusher http.Flusher, event string, data interface{}) {
@@ -1528,13 +1531,16 @@ func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, r *http.Request, 
 
 	h.recordFailure()
 
+	// 上游 429 透传成 429（限流），其余维持 500。避免把限流糊成服务端故障。
+	status := upstreamClientStatus(lastErr)
+
 	// 记录失败请求日志
 	config.AddRequestLog(config.RequestLog{
 		Timestamp:    time.Now().UnixMilli(),
 		Method:       "POST",
 		Path:         "/v1/messages",
 		Model:        model,
-		StatusCode:   500,
+		StatusCode:   status,
 		Success:      false,
 		ErrorMessage: lastErr.Error(),
 		InputTokens:  estimatedInputTokens,
@@ -1543,7 +1549,7 @@ func (h *Handler) handleClaudeNonStream(w http.ResponseWriter, r *http.Request, 
 		Stream:       false,
 	})
 
-	h.sendClaudeError(w, 500, "api_error", lastErr.Error())
+	h.sendClaudeError(w, status, claudeErrTypeFor(status), lastErr.Error())
 }
 
 func (h *Handler) sendClaudeError(w http.ResponseWriter, status int, errType, message string) {
