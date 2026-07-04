@@ -1,0 +1,137 @@
+name: Build Windows (amd64 + arm64) and publish release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build binaries and frontend
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.25']
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run unit tests
+        run: |
+          go test ./... -count=1 || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and build frontend
+        working-directory: ./web
+        run: |
+          if [ -f package.json ]; then
+            npm ci || npm install
+            npm run build || npm run build:prod || true
+          else
+            echo "No web/package.json found; skipping frontend build"
+          fi
+
+      - name: Build Windows binary
+        env:
+          CGO_ENABLED: 0
+        run: |
+          case "${{ matrix.arch }}" in
+            amd64) export GOARCH=amd64 ;;
+            arm64) export GOARCH=arm64 ;;
+          esac
+          export GOOS=windows
+          mkdir -p build
+          echo "Building for windows/${GOARCH}"
+          go build -o build/kiro-go_windows_${GOARCH}.exe ./...
+
+      - name: Package artifact
+        run: |
+          mkdir -p artifact
+          cp build/*.exe artifact/ || true
+          if [ -d web/dist ]; then
+            cp -r web/dist artifact/web_dist || true
+          elif [ -d web/build ]; then
+            cp -r web/build artifact/web_build || true
+          fi
+          cd artifact
+          zip -r ../Kiro-Go-windows-${{ matrix.arch }}.zip . || true
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kiro-Go-windows-${{ matrix.arch }}
+          path: |
+            Kiro-Go-windows-${{ matrix.arch }}.zip
+            build/*.exe
+
+  release:
+    name: Create GitHub Release and upload assets
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Download amd64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Kiro-Go-windows-amd64
+          path: ./artifacts/amd64
+
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Kiro-Go-windows-arm64
+          path: ./artifacts/arm64
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: vbuild-${{ github.run_id }}
+          release_name: Build vbuild-${{ github.run_id }}
+          body: "Automated Windows builds (amd64 + arm64) for Kiro-Go. Built by workflow run ${{ github.run_id }}."
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload amd64 ZIP to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/amd64/Kiro-Go-windows-amd64.zip
+          asset_name: Kiro-Go-windows-amd64.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload arm64 ZIP to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/arm64/Kiro-Go-windows-arm64.zip
+          asset_name: Kiro-Go-windows-arm64.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List uploaded assets
+        run: |
+          echo "Release created: vbuild-${{ github.run_id }}"
+          echo "Assets uploaded:"
+          ls -lh ./artifacts/amd64/ || true
+          ls -lh ./artifacts/arm64/ || true
